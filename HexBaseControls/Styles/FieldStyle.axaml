@@ -1,0 +1,18 @@
+﻿<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:hgc="clr-namespace:HexGameControls;assembly=HexGameControls">
+	<Style Selector="ItemsControl.Field">
+		<Setter Property="ClipToBounds" Value="False"/>
+		<Setter Property="ItemsPanel">
+			<Setter.Value>
+				<ItemsPanelTemplate>
+					<Canvas/>
+				</ItemsPanelTemplate>
+			</Setter.Value>
+		</Setter>
+		<Style Selector="^ > ContentPresenter">
+			<Setter Property="Canvas.Top" Value="{Binding Location.Y}"/>
+			<Setter Property="Canvas.Left" Value="{Binding Location.X}"/>
+		</Style>
+	</Style>
+</Styles>

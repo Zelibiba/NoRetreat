@@ -1,0 +1,45 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+     <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+	
+  <ItemGroup>
+    <Content Include="Assets\avalonia-logo.ico" />
+    <Compile Include="Extentions.fs" />
+    <Compile Include="Controls.fs" />
+    <Compile Include="Model\Coordinates.fs" />
+    <Compile Include="Model\Counter.fs" />
+    <Compile Include="Model\Cell.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="App.axaml.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.0.11" />
+    <PackageReference Include="Avalonia.FuncUI" Version="1.4.0" />
+    <PackageReference Include="Avalonia.FuncUI.Elmish" Version="1.4.0" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.0.11" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.0.11" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+    <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
+    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.0.11" />
+    <PackageReference Include="Elmish" Version="4.2.0" />
+    <PackageReference Include="FSharp.Data" Version="6.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HexBaseControls\HexGameControls.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="8.0.301" />
+  </ItemGroup>
+</Project>

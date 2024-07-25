@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Units>
+	<Unit country="Germany">
+		<Side name="1Panzer" type="Tank">
+			<Strength type="Usual">7</Strength>
+			<Movement>6</Movement>
+		</Side>
+		<Side name="1Panzer_h" type="Tank">
+			<Strength type="Usual">5</Strength>
+			<Movement>6</Movement>
+		</Side>
+	</Unit>
+	<Unit country="Germany">
+		<Side name="2Panzer" type="Tank">
+			<Strength type="Usual">7</Strength>
+			<Movement>6</Movement>
+		</Side>
+		<Side name="2Panzer_h" type="Tank">
+			<Strength type="Usual">5</Strength>
+			<Movement>6</Movement>
+		</Side>
+	</Unit>
+	<Unit country="Germany">
+		<Side name="3Panzer" type="Tank">
+			<Strength type="Usual">6</Strength>
+			<Movement>6</Movement>
+		</Side>
+		<Side name="3Panzer_h" type="Tank">
+			<Strength type="Usual">5</Strength>
+			<Movement>6</Movement>
+		</Side>
+	</Unit>
+	<Unit country="Germany">
+		<Side name="4Panzer" type="Tank">
+			<Strength type="Usual">5</Strength>
+			<Movement>6</Movement>
+		</Side>
+		<Side name="4Panzer_h" type="Tank">
+			<Strength type="Usual">4</Strength>
+			<Movement>6</Movement>
+		</Side>
+	</Unit>
+	<Unit country="Germany">
+		<Side name="2Army" type="Mechanized">
+			<Strength type="Usual">5</Strength>
+			<Movement>5</Movement>
+		</Side>
+		<Side name="2Army_h" type="Mechanized">
+			<Strength type="Usual">4</Strength>
+			<Movement>4</Movement>
+		</Side>
+	</Unit>
+	<Unit country="Germany">
+		<Side name="4Army" type="Infantry">
+			<Strength type="Usual">4</Strength>
+			<Movement>4</Movement>
+		</Side>
+		<Side name="4Army_h" type="Infantry">
+			<Strength type="Usual">3</Strength>
+			<Movement>4</Movement>
+		</Side>
+	</Unit>
+	<Unit country="Germany">
+		<Side name="6Army" type="Infantry">
+			<Strength type="Usual">4</Strength>
+			<Movement>4</Movement>
+		</Side>
+		<Side name="6Army_h" type="Infantry">
+			<Strength type="Usual">3</Strength>
+			<Movement>4</Movement>
+		</Side>
+	</Unit>
+	<Unit country="Germany">
+		<Side name="8Army" type="Mechanized">
+			<Strength type="Usual">5</Strength>
+			<Movement>4</Movement>
+		</Side>
+		<Side name="8Army_h" type="Mechanized">
+			<Strength type="Usual">3</Strength>
+			<Movement>4</Movement>
+		</Side>
+	</Unit>
+	<Unit country="Germany">
+		<Side name="9Army" type="Infantry">
+			<Strength type="Usual">4</Strength>
+			<Movement>4</Movement>
+		</Side>
+		<Side name="9Army_h" type="Infantry">
+			<Strength type="Usual">3</Strength>
+			<Movement>4</Movement>
+		</Side>
+	</Unit>
+	<Unit country="Germany">
+		<Side name="11Army" type="Infantry">
+			<Strength type="Usual">4</Strength>
+			<Movement>4</Movement>
+		</Side>
+		<Side name="11Army_h" type="Infantry">
+			<Strength type="Usual">3</Strength>
+			<Movement>4</Movement>
+		</Side>
+	</Unit>
+	<Unit country="Germany">
+		<Side name="16Army" type="Infantry">
+			<Strength type="Usual">3</Strength>
+			<Movement>4</Movement>
+		</Side>
+		<Side name="16Army_h" type="Infantry">
+			<Strength type="Usual">3</Strength>
+			<Movement>3</Movement>
+		</Side>
+	</Unit>
+	<Unit country="Germany">
+		<Side name="17Army" type="Infantry">
+			<Strength type="Usual">4</Strength>
+			<Movement>4</Movement>
+		</Side>
+		<Side name="17Army_h" type="Infantry">
+			<Strength type="Usual">3</Strength>
+			<Movement>4</Movement>
+		</Side>
+	</Unit>
+	<Unit country="Germany">
+		<Side name="18Army" type="Infantry">
+			<Strength type="Usual">3</Strength>
+			<Movement>4</Movement>
+		</Side>
+		<Side name="18Army_h" type="Infantry">
+			<Strength type="Usual">3</Strength>
+			<Movement>3</Movement>
+		</Side>
+	</Unit>
+	<Unit country="Germany">
+		<Side name="Finnish" type="Fortified">
+			<Strength type="NoZOC">4</Strength>
+			<Movement>0</Movement>
+		</Side>
+		<Side name="Finnish_h" type="Fortified">
+			<Strength type="NoZOC">2</Strength>
+			<Movement>0</Movement>
+		</Side>
+	</Unit>
+	<Unit country="Germany">
+		<Side name="SSPanzer" type="SSTank">
+			<Strength type="Usual">6</Strength>
+			<Movement>6</Movement>
+		</Side>
+		<Side name="SSPanzer_h" type="SSTank">
+			<Strength type="Usual">4</Strength>
+			<Movement>6</Movement>
+		</Side>
+	</Unit>
+	<Unit country="Germany">
+		<Side name="SSGrenadier" type="SSMechanized">
+			<Strength type="Usual">3</Strength>
+			<Movement>5</Movement>
+		</Side>
+		<Side name="SSGrenadier_h" type="SSMechanized">
+			<Strength type="Usual">2</Strength>
+			<Movement>4</Movement>
+		</Side>
+	</Unit>
+	<Unit country="Germany">
+		<Side name="GroupE" type="Infantry">
+			<Strength type="Usual">3</Strength>
+			<Movement>4</Movement>
+		</Side>
+		<Side name="GroupE_h" type="Infantry">
+			<Strength type="Usual">2</Strength>
+			<Movement>4</Movement>
+		</Side>
+	</Unit>
+	<Unit country="Germany">
+		<Side name="GroupF" type="Infantry">
+			<Strength type="Usual">4</Strength>
+			<Movement>4</Movement>
+		</Side>
+		<Side name="GroupF_h" type="Infantry">
+			<Strength type="Usual">2</Strength>
+			<Movement>4</Movement>
+		</Side>
+	</Unit>
+
+	
+	
+	<Unit country="USSR">
+		<Side name="2Baltic" type="Infantry">
+			<Strength type="Usual">6</Strength>
+			<Movement>3</Movement>
+		</Side>
+		<Side name="Northwest" type="Infantry">
+			<Strength type="Usual">3</Strength>
+			<Movement>3</Movement>
+		</Side>
+	</Unit>
+	<Unit country="USSR">
+		<Side name="3Byelorussian" type="Infantry">
+			<Strength type="Usual">7</Strength>
+			<Movement>3</Movement>
+		</Side>
+		<Side name="West" type="Infantry">
+			<Strength type="Usual">4</Strength>
+			<Movement>3</Movement>
+		</Side>
+	</Unit>
+	<Unit country="USSR">
+		<Side name="1Byelorussian" type="Shock">
+			<Strength type="Usual">8</Strength>
+			<Movement>2</Movement>
+		</Side>
+		<Side name="Southwest" type="Infantry">
+			<Strength type="Usual">5</Strength>
+			<Movement>3</Movement>
+		</Side>
+	</Unit>
+	<Unit country="USSR">
+		<Side name="5GuardTank" type="Tank">
+			<Strength type="Usual">8</Strength>
+			<Movement>4</Movement>
+		</Side>
+		<Side name="Central" type="Mechanized">
+			<Strength type="Usual">5</Strength>
+			<Movement>3</Movement>
+		</Side>
+	</Unit>
+	<Unit country="USSR">
+		<Side name="4Ukraine" type="Infantry">
+			<Strength type="Usual">6</Strength>
+			<Movement>3</Movement>
+		</Side>
+		<Side name="South" type="Infantry">
+			<Strength type="Usual">3</Strength>
+			<Movement>3</Movement>
+		</Side>
+	</Unit>
+	<Unit country="USSR">
+		<Side name="Leningrad" type="Fortified">
+			<Strength type="NoZOC">5</Strength>
+			<Movement>0</Movement>
+		</Side>
+		<Side name="Leningrad_h" type="Regional">
+			<Strength type="Usual">3</Strength>
+			<Movement>3</Movement>
+		</Side>
+	</Unit>
+	<Unit country="USSR">
+		<Side name="3Tank" type="Tank">
+			<Strength type="Usual">6</Strength>
+			<Movement>4</Movement>
+		</Side>
+		<Side name="Reserve" type="Mechanized">
+			<Strength type="Usual">4</Strength>
+			<Movement>3</Movement>
+		</Side>
+	</Unit>
+	<Unit country="USSR">
+		<Side name="4Tank" type="Tank">
+			<Strength type="Usual">5</Strength>
+			<Movement>4</Movement>
+		</Side>
+		<Side name="Bryansk" type="Mechanized">
+			<Strength type="Usual">3</Strength>
+			<Movement>3</Movement>
+		</Side>
+	</Unit>
+	<Unit country="USSR">
+		<Side name="1Baltic" type="Infantry">
+			<Strength type="Usual">7</Strength>
+			<Movement>3</Movement>
+		</Side>
+		<Side name="Kalinin" type="Infantry">
+			<Strength type="Usual">4</Strength>
+			<Movement>3</Movement>
+		</Side>
+	</Unit>
+	<Unit country="USSR">
+		<Side name="2Tank" type="Tank">
+			<Strength type="Usual">5</Strength>
+			<Movement>4</Movement>
+		</Side>
+		<Side name="Caucasus" type="Mechanized">
+			<Strength type="Usual">3</Strength>
+			<Movement>3</Movement>
+		</Side>
+	</Unit>
+	<Unit country="USSR">
+		<Side name="Moscow" type="Fortified">
+			<Strength type="NoZOC">4</Strength>
+			<Movement>0</Movement>
+		</Side>
+		<Side name="Moscow_h" type="Regional">
+			<Strength type="Usual">2</Strength>
+			<Movement>3</Movement>
+		</Side>
+	</Unit>
+	<Unit country="USSR">
+		<Side name="Sevastopol" type="Fortified">
+			<Strength type="NoZOC">3</Strength>
+			<Movement>0</Movement>
+		</Side>
+		<Side name="Sevastopol_h" type="Regional">
+			<Strength type="Usual">2</Strength>
+			<Movement>3</Movement>
+		</Side>
+	</Unit>
+	<Unit country="USSR">
+		<Side name="3Baltic" type="Infantry">
+			<Strength type="Usual">7</Strength>
+			<Movement>3</Movement>
+		</Side>
+		<Side name="Volkhov" type="Infantry">
+			<Strength type="Usual">4</Strength>
+			<Movement>3</Movement>
+		</Side>
+	</Unit>
+	<Unit country="USSR">
+		<Side name="Shock" type="Shock">
+			<Strength type="Usual">5</Strength>
+			<Movement>3</Movement>
+		</Side>
+		<Side name="Crimean" type="Infantry">
+			<Strength type="Usual">3</Strength>
+			<Movement>3</Movement>
+		</Side>
+	</Unit>
+	<Unit country="USSR">
+		<Side name="2Byelorussian" type="Infantry">
+			<Strength type="Usual">7</Strength>
+			<Movement>3</Movement>
+		</Side>
+		<Side name="NCaucasus" type="Infantry">
+			<Strength type="Usual">4</Strength>
+			<Movement>3</Movement>
+		</Side>
+	</Unit>
+	<Unit country="USSR">
+		<Side name="1Ukraine" type="Infantry">
+			<Strength type="Usual">6</Strength>
+			<Movement>3</Movement>
+		</Side>
+		<Side name="Voronezh" type="Infantry">
+			<Strength type="Usual">3</Strength>
+			<Movement>3</Movement>
+		</Side>
+	</Unit>
+	<Unit country="USSR">
+		<Side name="3Ukraine" type="Infantry">
+			<Strength type="Usual">7</Strength>
+			<Movement>3</Movement>
+		</Side>
+		<Side name="Stalingrad" type="Infantry">
+			<Strength type="Usual">4</Strength>
+			<Movement>3</Movement>
+		</Side>
+	</Unit>
+	<Unit country="USSR">
+		<Side name="1Tank" type="Tank">
+			<Strength type="Usual">6</Strength>
+			<Movement>4</Movement>
+		</Side>
+		<Side name="Don" type="Mechanized">
+			<Strength type="Usual">4</Strength>
+			<Movement>3</Movement>
+		</Side>
+	</Unit>
+	<Unit country="USSR">
+		<Side name="6Tank" type="Tank">
+			<Strength type="Usual">5</Strength>
+			<Movement>4</Movement>
+		</Side>
+		<Side name="Kursk" type="Mechanized">
+			<Strength type="Usual">3</Strength>
+			<Movement>3</Movement>
+		</Side>
+	</Unit>
+	<Unit country="USSR">
+		<Side name="2Ukraine" type="Infantry">
+			<Strength type="Usual">6</Strength>
+			<Movement>3</Movement>
+		</Side>
+		<Side name="Steppe" type="Infantry">
+			<Strength type="Usual">3</Strength>
+			<Movement>3</Movement>
+		</Side>
+	</Unit>
+</Units>

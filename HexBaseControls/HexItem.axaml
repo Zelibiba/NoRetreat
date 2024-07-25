@@ -1,0 +1,45 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:conv="clr-namespace:HexGameControls.Converters"
+			 xmlns:c="clr-namespace:HexGameControls"
+             x:Class="HexGameControls.HexItem">
+	<UserControl.Resources>
+		<conv:HexItemConverter x:Key="HexConverter"/>
+	</UserControl.Resources>
+	<UserControl.Template>
+		<ControlTemplate>
+			<Panel Name="Panel">
+				<Path Name="Border" Stroke="{TemplateBinding BorderBrush}"
+					  StrokeThickness="{Binding BorderThickness.Top, RelativeSource={RelativeSource TemplatedParent}}">
+					<Path.Data>
+						<MultiBinding Converter="{StaticResource HexConverter}">
+							<Binding Path="#Panel.Bounds.Width"/>
+							<Binding Path="#Panel.Bounds.Height"/>
+							<Binding Path="#Border.StrokeThickness"/>
+						</MultiBinding>
+					</Path.Data>
+				</Path>
+				<Panel Name="Back" Margin="{TemplateBinding BorderThickness}" ClipToBounds="False"
+					   HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+					   Opacity="{TemplateBinding BackGroundOpacity}"
+					   Background="{TemplateBinding Background}">
+					<Panel.Clip>
+						<MultiBinding Converter="{StaticResource HexConverter}">
+							<Binding Path="#Back.Bounds.Width"/>
+							<Binding Path="#Back.Bounds.Height"/>
+						</MultiBinding>
+					</Panel.Clip>
+				</Panel>
+				<ContentPresenter Name="Hex_ContentPresenter"
+								  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+								  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+								  Margin="{TemplateBinding Padding}"
+								  Content="{TemplateBinding Content}"
+								  ContentTemplate="{TemplateBinding ContentTemplate}"/>
+
+			</Panel>
+		</ControlTemplate>
+	</UserControl.Template>
+</UserControl>
