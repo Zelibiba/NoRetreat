@@ -1,7 +1,7 @@
 ﻿namespace NoRetreat.Model
 
 open System.IO
-open System.Reflection
+open Elmish
 open FSharp.Data
 open Avalonia.FuncUI.DSL
 open Avalonia.FuncUI.Types
@@ -13,8 +13,10 @@ open Avalonia.Media.Imaging
 open Avalonia.Platform
 open Avalonia.Layout
 open NoRetreat.Extentions
+open NoRetreat.Controls
+open NoRetreat.Controls.EventLib
 
-
+[<Struct>]
 type Country =
     | USSR
     | Germany
@@ -25,7 +27,8 @@ type Country =
         | "Germany" -> Germany
         | _ -> failwith "Wrong Country string"
 
-and UnitType =
+[<Struct>]
+type UnitType =
     | Infantry
     | Regional
     | Fortified
@@ -47,7 +50,8 @@ and UnitType =
         | "SSTank" -> SSTank
         | _ -> failwith "Wrong UnitType string"
 
-and AttackType =
+[<Struct>]
+type AttackType =
     | Usual
     | Passive
     | NoZOC
@@ -59,41 +63,44 @@ and AttackType =
         | "NoZOC" -> NoZOC
         | _ -> failwith "Wrong AttackType string"
 
-and AttackInfo = { Strength: int; Type: AttackType }
+[<Struct>]
+type AttackInfo = { Strength: int; Type: AttackType }
 
-and UnitInfo =
+[<Struct>]
+type UnitInfo =
     { Name: string
       Type: UnitType
       Attack: AttackInfo
       Movement: int }
 
-and CounterSide =
-    | FullSide of UnitInfo
-    | HalfSide of UnitInfo
+[<Struct>]
+type CounterSide =
+    | FullSide of fullSide: UnitInfo
+    | HalfSide of halfSide: UnitInfo
 
-and UnitCounter =
+[<Struct>]
+type UnitCounter =
     { Country: Country
       CurrentSide: CounterSide
       OtherSide: CounterSide }
 
-and Counter = Unit of UnitCounter
+type CounterInfo = Unit of UnitCounter
 
-module Counter =
+type Counter =
+    { IsSelected: bool
+      IsSideSwapped: bool
+      Counter: CounterInfo }
 
-    type State =
-        { IsSelected: bool
-          IsSideSwapped: bool
-          Counter: Counter }
+module UnitCounter =
+    let swapSides unitCounter =
+        { unitCounter with
+            CurrentSide = unitCounter.OtherSide
+            OtherSide = unitCounter.CurrentSide }
 
-    type Msg =
-        | ChangeIsSelected
-        | SwapSides of bool
-
-
-    type UnitData =
-        XmlProvider<"""
+type UnitData =
+    XmlProvider<"""
             <Units>
-				<Unit country="Germany">
+				<Unit id="6" country="Germany">
 					<Side name="1Panzer" type="Tank">
 						<Strength type="Usual">7</Strength>
 						<Movement>6</Movement>
@@ -103,7 +110,7 @@ module Counter =
 						<Movement>6</Movement>
 					</Side>
 				</Unit>
-		        <Unit country="Germany">
+		        <Unit id="1" country="Germany">
 			        <Side name="2Panzer" type="Tank">
 				        <Strength type="Usual">7</Strength>
 				        <Movement>6</Movement>
@@ -115,6 +122,10 @@ module Counter =
 		        </Unit>
 		    </Units>""">
 
+module UnitData =
+    let data =
+        UnitData.Load("avares://NoRetreat/Assets/UnitCounters.xml" |> Stream.create)
+
     let createSide (side: UnitData.Side) =
         { Name = side.Name
           Type = UnitType.fromString side.Type
@@ -123,13 +134,15 @@ module Counter =
               Type = AttackType.fromString side.Strength.Type }
           Movement = side.Movement }
 
-    let swapSides unitCounter =
-        { unitCounter with
-            CurrentSide = unitCounter.OtherSide
-            OtherSide = unitCounter.CurrentSide }
+module Counter =
+    open UnitCounter
+    open UnitData
 
-    let data =
-            UnitData.Load("avares://NoRetreat/Assets/UnitCounters.xml" |> Stream.create)
+    type Msg =
+        | SetIsSelected of bool
+        | AddSelection of bool
+        | Flip of back: bool
+
     let rand = System.Random()
 
     let init () =
@@ -148,17 +161,16 @@ module Counter =
                   CurrentSide = fullSide
                   OtherSide = halfSide } }
 
-    let update (msg: Msg) (state: State) =
+    let update (msg: Msg) (state: Counter) =
         match msg with
-        | ChangeIsSelected ->
-            { state with
-                IsSelected = not state.IsSelected }
-        | SwapSides isSwapped ->
+        | SetIsSelected isSelected
+        | AddSelection isSelected -> { state with IsSelected = isSelected }
+        | Flip back ->
             let (Unit unitCounter) = state.Counter
 
             { state with
                 Counter = swapSides unitCounter |> Unit
-                IsSideSwapped = not isSwapped }
+                IsSideSwapped = not back }
 
     //let iconView unitType : IView =
     //    let height = 20.
@@ -219,38 +231,46 @@ module Counter =
         sprintf "avares://NoRetreat/Assets/Units/%A/%s.PNG" country unitInfo.Name
         |> Bitmap.Create
 
-    let private contextMenuView (state: State) (dispatch: Msg -> unit) =
-        ContextMenu.create
-            [ ContextMenu.viewItems
-                  [ MenuItem.create
-                        [ MenuItem.header "Посмотреть другую сторону"
-                          MenuItem.onClick (fun _ -> SwapSides false |> dispatch) ] ] ]
+    let view (state: Counter) (dispatch: Msg -> unit) : IView =
+        let (Unit unit) = state.Counter
 
-    let view (state: State) (dispatch: Msg -> unit) : IView =
         Border.create
             [ Border.height 70
               Border.width 70
-              //Border.background "#9CB6AD"
               if state.IsSelected then
-                  Border.borderBrush "Red"
-                  Border.borderThickness 2
+                  match unit.Country with
+                  | USSR -> "Green"
+                  | Germany -> "Red"
+                  |> Border.borderBrush
+
+                  Border.borderThickness 3
               else
                   Border.borderBrush "Black"
                   Border.borderThickness 1
+              if state.IsSelected && not state.IsSideSwapped then
+                  Border.zIndex 1
+              else if state.IsSideSwapped then
+                  Border.zIndex 2
               Border.cornerRadius 10
               Border.boxShadow (BoxShadow.Parse("-3 4 0 0 #515151"))
 
-              Border.onTapped (fun _ -> dispatch ChangeIsSelected)
               if state.IsSideSwapped then
-                  Border.onPointerExited (fun _ ->
-                      if state.IsSideSwapped then
-                          SwapSides true |> dispatch)
+                  Border.onPointerReleased (fun e ->
+                      e.Handled <- true
+                      Flip true |> dispatch)
               else
-                  Border.contextMenu (contextMenuView state dispatch)
+                  Border.onPointerPressedExt2 (
+                      splitByLeftButton,
+                      (fun e ->
+                          if e.KeyModifiers.HasFlag(Avalonia.Input.KeyModifiers.Control) then
+                              AddSelection true |> dispatch
+                          else
+                              SetIsSelected true |> dispatch),
+                      fun _ -> Flip false |> dispatch
+                  )
+
 
               Border.child (
-                  let (Unit unit) = state.Counter
-
                   match unit.CurrentSide with
                   | FullSide unitInfo
                   | HalfSide unitInfo -> Image.create [ Image.source (loadImage unit.Country unitInfo) ] |> generalize

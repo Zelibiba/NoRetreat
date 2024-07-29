@@ -12,6 +12,7 @@
   <ItemGroup>
     <Content Include="Assets\avalonia-logo.ico" />
     <Compile Include="Extentions.fs" />
+    <Compile Include="EventExtention.fs" />
     <Compile Include="Controls.fs" />
     <Compile Include="Model\Coordinates.fs" />
     <Compile Include="Model\Counter.fs" />

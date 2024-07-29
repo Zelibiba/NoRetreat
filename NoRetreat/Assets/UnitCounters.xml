@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Units>
-	<Unit country="Germany">
+	<Unit id="0" country="Germany">
 		<Side name="1Panzer" type="Tank">
 			<Strength type="Usual">7</Strength>
 			<Movement>6</Movement>
@@ -10,7 +10,7 @@
 			<Movement>6</Movement>
 		</Side>
 	</Unit>
-	<Unit country="Germany">
+	<Unit id="1" country="Germany">
 		<Side name="2Panzer" type="Tank">
 			<Strength type="Usual">7</Strength>
 			<Movement>6</Movement>
@@ -20,7 +20,7 @@
 			<Movement>6</Movement>
 		</Side>
 	</Unit>
-	<Unit country="Germany">
+	<Unit id="2" country="Germany">
 		<Side name="3Panzer" type="Tank">
 			<Strength type="Usual">6</Strength>
 			<Movement>6</Movement>
@@ -30,7 +30,7 @@
 			<Movement>6</Movement>
 		</Side>
 	</Unit>
-	<Unit country="Germany">
+	<Unit id="3" country="Germany">
 		<Side name="4Panzer" type="Tank">
 			<Strength type="Usual">5</Strength>
 			<Movement>6</Movement>
@@ -40,7 +40,7 @@
 			<Movement>6</Movement>
 		</Side>
 	</Unit>
-	<Unit country="Germany">
+	<Unit id="4" country="Germany">
 		<Side name="2Army" type="Mechanized">
 			<Strength type="Usual">5</Strength>
 			<Movement>5</Movement>
@@ -50,7 +50,7 @@
 			<Movement>4</Movement>
 		</Side>
 	</Unit>
-	<Unit country="Germany">
+	<Unit id="5" country="Germany">
 		<Side name="4Army" type="Infantry">
 			<Strength type="Usual">4</Strength>
 			<Movement>4</Movement>
@@ -60,7 +60,7 @@
 			<Movement>4</Movement>
 		</Side>
 	</Unit>
-	<Unit country="Germany">
+	<Unit id="6" country="Germany">
 		<Side name="6Army" type="Infantry">
 			<Strength type="Usual">4</Strength>
 			<Movement>4</Movement>
@@ -70,7 +70,7 @@
 			<Movement>4</Movement>
 		</Side>
 	</Unit>
-	<Unit country="Germany">
+	<Unit id="7" country="Germany">
 		<Side name="8Army" type="Mechanized">
 			<Strength type="Usual">5</Strength>
 			<Movement>4</Movement>
@@ -80,7 +80,7 @@
 			<Movement>4</Movement>
 		</Side>
 	</Unit>
-	<Unit country="Germany">
+	<Unit id="8" country="Germany">
 		<Side name="9Army" type="Infantry">
 			<Strength type="Usual">4</Strength>
 			<Movement>4</Movement>
@@ -90,7 +90,7 @@
 			<Movement>4</Movement>
 		</Side>
 	</Unit>
-	<Unit country="Germany">
+	<Unit id="9" country="Germany">
 		<Side name="11Army" type="Infantry">
 			<Strength type="Usual">4</Strength>
 			<Movement>4</Movement>
@@ -100,7 +100,7 @@
 			<Movement>4</Movement>
 		</Side>
 	</Unit>
-	<Unit country="Germany">
+	<Unit id="10" country="Germany">
 		<Side name="16Army" type="Infantry">
 			<Strength type="Usual">3</Strength>
 			<Movement>4</Movement>
@@ -110,7 +110,7 @@
 			<Movement>3</Movement>
 		</Side>
 	</Unit>
-	<Unit country="Germany">
+	<Unit id="11" country="Germany">
 		<Side name="17Army" type="Infantry">
 			<Strength type="Usual">4</Strength>
 			<Movement>4</Movement>
@@ -120,7 +120,7 @@
 			<Movement>4</Movement>
 		</Side>
 	</Unit>
-	<Unit country="Germany">
+	<Unit id="12" country="Germany">
 		<Side name="18Army" type="Infantry">
 			<Strength type="Usual">3</Strength>
 			<Movement>4</Movement>
@@ -130,7 +130,7 @@
 			<Movement>3</Movement>
 		</Side>
 	</Unit>
-	<Unit country="Germany">
+	<Unit id="13" country="Germany">
 		<Side name="Finnish" type="Fortified">
 			<Strength type="NoZOC">4</Strength>
 			<Movement>0</Movement>
@@ -140,7 +140,7 @@
 			<Movement>0</Movement>
 		</Side>
 	</Unit>
-	<Unit country="Germany">
+	<Unit id="14" country="Germany">
 		<Side name="SSPanzer" type="SSTank">
 			<Strength type="Usual">6</Strength>
 			<Movement>6</Movement>
@@ -150,7 +150,7 @@
 			<Movement>6</Movement>
 		</Side>
 	</Unit>
-	<Unit country="Germany">
+	<Unit id="15" country="Germany">
 		<Side name="SSGrenadier" type="SSMechanized">
 			<Strength type="Usual">3</Strength>
 			<Movement>5</Movement>
@@ -160,7 +160,7 @@
 			<Movement>4</Movement>
 		</Side>
 	</Unit>
-	<Unit country="Germany">
+	<Unit id="16" country="Germany">
 		<Side name="GroupE" type="Infantry">
 			<Strength type="Usual">3</Strength>
 			<Movement>4</Movement>
@@ -170,7 +170,7 @@
 			<Movement>4</Movement>
 		</Side>
 	</Unit>
-	<Unit country="Germany">
+	<Unit id="17" country="Germany">
 		<Side name="GroupF" type="Infantry">
 			<Strength type="Usual">4</Strength>
 			<Movement>4</Movement>
@@ -181,9 +181,9 @@
 		</Side>
 	</Unit>
 
-	
-	
-	<Unit country="USSR">
+
+
+	<Unit id="50" country="USSR">
 		<Side name="2Baltic" type="Infantry">
 			<Strength type="Usual">6</Strength>
 			<Movement>3</Movement>
@@ -193,7 +193,7 @@
 			<Movement>3</Movement>
 		</Side>
 	</Unit>
-	<Unit country="USSR">
+	<Unit id="51" country="USSR">
 		<Side name="3Byelorussian" type="Infantry">
 			<Strength type="Usual">7</Strength>
 			<Movement>3</Movement>
@@ -203,7 +203,7 @@
 			<Movement>3</Movement>
 		</Side>
 	</Unit>
-	<Unit country="USSR">
+	<Unit id="52" country="USSR">
 		<Side name="1Byelorussian" type="Shock">
 			<Strength type="Usual">8</Strength>
 			<Movement>2</Movement>
@@ -213,7 +213,7 @@
 			<Movement>3</Movement>
 		</Side>
 	</Unit>
-	<Unit country="USSR">
+	<Unit id="53" country="USSR">
 		<Side name="5GuardTank" type="Tank">
 			<Strength type="Usual">8</Strength>
 			<Movement>4</Movement>
@@ -223,7 +223,7 @@
 			<Movement>3</Movement>
 		</Side>
 	</Unit>
-	<Unit country="USSR">
+	<Unit id="54" country="USSR">
 		<Side name="4Ukraine" type="Infantry">
 			<Strength type="Usual">6</Strength>
 			<Movement>3</Movement>
@@ -233,7 +233,7 @@
 			<Movement>3</Movement>
 		</Side>
 	</Unit>
-	<Unit country="USSR">
+	<Unit id="55" country="USSR">
 		<Side name="Leningrad" type="Fortified">
 			<Strength type="NoZOC">5</Strength>
 			<Movement>0</Movement>
@@ -243,7 +243,7 @@
 			<Movement>3</Movement>
 		</Side>
 	</Unit>
-	<Unit country="USSR">
+	<Unit id="56" country="USSR">
 		<Side name="3Tank" type="Tank">
 			<Strength type="Usual">6</Strength>
 			<Movement>4</Movement>
@@ -253,7 +253,7 @@
 			<Movement>3</Movement>
 		</Side>
 	</Unit>
-	<Unit country="USSR">
+	<Unit id="57" country="USSR">
 		<Side name="4Tank" type="Tank">
 			<Strength type="Usual">5</Strength>
 			<Movement>4</Movement>
@@ -263,7 +263,7 @@
 			<Movement>3</Movement>
 		</Side>
 	</Unit>
-	<Unit country="USSR">
+	<Unit id="58" country="USSR">
 		<Side name="1Baltic" type="Infantry">
 			<Strength type="Usual">7</Strength>
 			<Movement>3</Movement>
@@ -273,7 +273,7 @@
 			<Movement>3</Movement>
 		</Side>
 	</Unit>
-	<Unit country="USSR">
+	<Unit id="59" country="USSR">
 		<Side name="2Tank" type="Tank">
 			<Strength type="Usual">5</Strength>
 			<Movement>4</Movement>
@@ -283,7 +283,7 @@
 			<Movement>3</Movement>
 		</Side>
 	</Unit>
-	<Unit country="USSR">
+	<Unit id="60" country="USSR">
 		<Side name="Moscow" type="Fortified">
 			<Strength type="NoZOC">4</Strength>
 			<Movement>0</Movement>
@@ -293,7 +293,7 @@
 			<Movement>3</Movement>
 		</Side>
 	</Unit>
-	<Unit country="USSR">
+	<Unit id="61" country="USSR">
 		<Side name="Sevastopol" type="Fortified">
 			<Strength type="NoZOC">3</Strength>
 			<Movement>0</Movement>
@@ -303,7 +303,7 @@
 			<Movement>3</Movement>
 		</Side>
 	</Unit>
-	<Unit country="USSR">
+	<Unit id="62" country="USSR">
 		<Side name="3Baltic" type="Infantry">
 			<Strength type="Usual">7</Strength>
 			<Movement>3</Movement>
@@ -313,7 +313,7 @@
 			<Movement>3</Movement>
 		</Side>
 	</Unit>
-	<Unit country="USSR">
+	<Unit id="63" country="USSR">
 		<Side name="Shock" type="Shock">
 			<Strength type="Usual">5</Strength>
 			<Movement>3</Movement>
@@ -323,7 +323,7 @@
 			<Movement>3</Movement>
 		</Side>
 	</Unit>
-	<Unit country="USSR">
+	<Unit id="64" country="USSR">
 		<Side name="2Byelorussian" type="Infantry">
 			<Strength type="Usual">7</Strength>
 			<Movement>3</Movement>
@@ -333,7 +333,7 @@
 			<Movement>3</Movement>
 		</Side>
 	</Unit>
-	<Unit country="USSR">
+	<Unit id="65" country="USSR">
 		<Side name="1Ukraine" type="Infantry">
 			<Strength type="Usual">6</Strength>
 			<Movement>3</Movement>
@@ -343,7 +343,7 @@
 			<Movement>3</Movement>
 		</Side>
 	</Unit>
-	<Unit country="USSR">
+	<Unit id="66" country="USSR">
 		<Side name="3Ukraine" type="Infantry">
 			<Strength type="Usual">7</Strength>
 			<Movement>3</Movement>
@@ -353,7 +353,7 @@
 			<Movement>3</Movement>
 		</Side>
 	</Unit>
-	<Unit country="USSR">
+	<Unit id="67" country="USSR">
 		<Side name="1Tank" type="Tank">
 			<Strength type="Usual">6</Strength>
 			<Movement>4</Movement>
@@ -363,7 +363,7 @@
 			<Movement>3</Movement>
 		</Side>
 	</Unit>
-	<Unit country="USSR">
+	<Unit id="68" country="USSR">
 		<Side name="6Tank" type="Tank">
 			<Strength type="Usual">5</Strength>
 			<Movement>4</Movement>
@@ -373,7 +373,7 @@
 			<Movement>3</Movement>
 		</Side>
 	</Unit>
-	<Unit country="USSR">
+	<Unit id="69" country="USSR">
 		<Side name="2Ukraine" type="Infantry">
 			<Strength type="Usual">6</Strength>
 			<Movement>3</Movement>

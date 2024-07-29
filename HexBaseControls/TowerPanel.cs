@@ -2,11 +2,13 @@
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Media.Transformation;
 using Avalonia.Reactive;
 using Avalonia.VisualTree;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,8 +21,10 @@ namespace HexGameControls
     /// </summary>
     public class TowerPanel : Panel
     {
-        public TowerPanel()
+        public TowerPanel() 
         {
+            AffectsMeasure<TowerPanel>(DeltaPaddingProperty);
+            AffectsMeasure<TowerPanel>(ExpandFactorProperty);
             AttachedToVisualTree += OnAttachedToVisualTree;
             DetachedFromVisualTree += OnDetachedFromVisualTree;
         }
@@ -44,11 +48,21 @@ namespace HexGameControls
             ArrangeOverride(DesiredSize);
         }
 
+        #region DeltaPaddingProperty
         /// <summary>
-        /// Флаг того, что стопка раскрыта.
+        /// Размер, на который сдигается каждый следующий контрол.
         /// </summary>
-        public bool IsExpanded { get; private set; }
-
+        public Size DeltaPadding
+        {
+            get => GetValue(DeltaPaddingProperty);
+            set => SetValue(DeltaPaddingProperty, value);
+        }
+        /// <summary>
+        /// Свойство для <see cref="DeltaPadding"/>.
+        /// </summary>
+        public static readonly StyledProperty<Size> DeltaPaddingProperty =
+            AvaloniaProperty.Register<TowerPanel, Size>(nameof(DeltaPadding));
+        #endregion
 
         #region ExpandFactorProperty
         /// <summary>
@@ -66,22 +80,25 @@ namespace HexGameControls
             AvaloniaProperty.Register<TowerPanel, double>(nameof(ExpandFactor), 1.0);
         #endregion
 
-        #region DeltaPaddingProperty
+        #region IsExpandedProperty
+        bool _isExpanded = false;
         /// <summary>
-        /// Размер, на который сдигается каждый следующий контрол.
+        /// Флаг, показывающий, раскрыта ли башня.
         /// </summary>
-        public Size DeltaPadding
+        public bool IsExpanded
         {
-            get => GetValue(DeltaPaddingProperty);
-            set => SetValue(DeltaPaddingProperty, value);
+            get => _isExpanded;
+            private set => SetAndRaise(IsExpandedProperty, ref _isExpanded, value);
         }
         /// <summary>
-        /// Свойство для <see cref="DeltaPadding"/>.
+        /// Свойство для <see cref="IsExpanded"/>.
         /// </summary>
-        public static readonly StyledProperty<Size> DeltaPaddingProperty =
-            AvaloniaProperty.Register<TowerPanel, Size>(nameof(DeltaPadding));
+        public static readonly DirectProperty<TowerPanel, bool> IsExpandedProperty =
+            AvaloniaProperty.RegisterDirect<TowerPanel, bool>(
+                nameof(IsExpanded),
+                o => o.IsExpanded,
+                (o, v) => o.IsExpanded = v);
         #endregion
-
 
         protected override Size MeasureOverride(Size availableSize)
         {
@@ -96,13 +113,15 @@ namespace HexGameControls
         {
             if (Children.Count == 0)
                 return finalSize;
-
+            
             Size padding = DeltaPadding;
+            double expandFactor = ExpandFactor;
             if (IsExpanded)
             {
-                padding = padding.WithHeight(padding.Height * ExpandFactor)
-                                 .WithWidth(padding.Width * ExpandFactor);
+                padding = padding.WithHeight(padding.Height * expandFactor)
+                                 .WithWidth(padding.Width * expandFactor);
             }
+
             var firstChild = Children[0];
             var rect = new Rect(0, 0, firstChild.DesiredSize.Width, firstChild.DesiredSize.Height);
             firstChild.Arrange(rect);
