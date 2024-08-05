@@ -1,4 +1,4 @@
-﻿namespace NoRetreat.Model
+﻿namespace NoRetreat
 
 [<Struct>]
 type Coordinates =

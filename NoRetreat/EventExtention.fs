@@ -139,10 +139,7 @@ module EventLib =
 
     let filterMiddleButton observable =
         Observable.filter (getProperties >> (_.IsMiddleButtonPressed)) observable
-
-    let filterNotMiddleButton observable =
-        Observable.filter (getProperties >> (_.IsMiddleButtonPressed) >> not) observable
-
+    
     let splitByLeftButton observable =
         observable
         |> Observable.choose (fun e ->

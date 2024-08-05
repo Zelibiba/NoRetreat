@@ -1,5 +1,7 @@
-﻿namespace NoRetreat.Model
+﻿namespace NoRetreat
 
+open Elmish
+open Avalonia.Layout
 open Avalonia.FuncUI.DSL
 open Avalonia.FuncUI.Types
 open NoRetreat.Controls
@@ -9,46 +11,54 @@ type Tower =
     { UpdateField: bool
       Counters: Counter array
       IsExpanded: bool
-      SelectedIdxs: int list }
+      IsSelected: bool }
 
     member this.Item
         with get index = this.Counters[index]
         and set index value = this.Counters[index] <- value
+
+    member this.Update() =
+        { this with
+            UpdateField = not this.UpdateField }
 
 module Tower =
     let create counters =
         { UpdateField = false
           Counters = counters
           IsExpanded = false
-          SelectedIdxs = [] }
+          IsSelected = false }
 
-    let update tower : Tower =
-        { tower with
-            UpdateField = not tower.UpdateField }
+    let update (tower: Tower) = tower.Update()
+
+    let setIsExpanded isExpanded tower = { tower with IsExpanded = isExpanded }
+
+    let updateCounter msg idx (tower: Tower) =
+        tower[idx] <- Counter.update msg tower[idx]
+        tower
+
+    let updateCounterAt tower msg idx = updateCounter msg idx tower |> ignore
 
     let deselectCounters (tower: Tower) =
-        tower.SelectedIdxs
-        |> List.iter (fun idx -> tower[idx] <- Counter.update (Counter.SetIsSelected false) tower[idx])
+        tower.Counters
+        |> Array.indexed
+        |> Array.filter (snd >> _.IsSelected)
+        |> Array.iter (fst >> updateCounterAt tower (Counter.ChangeSelection false))
 
-        { tower with SelectedIdxs = [] }
+        { tower with IsSelected = false }
 
-    let selectCounter index (tower: Tower) =
-        tower[index] <- Counter.update (Counter.SetIsSelected true) tower[index]
+
+    let defineSelection (tower: Tower) =
+        let selectedIdxs =
+            tower.Counters
+            |> Array.indexed
+            |> Array.filter (snd >> _.IsSelected)
+            |> Array.map fst
 
         { tower with
-            SelectedIdxs = tower.SelectedIdxs @ [ index ] }
+            IsSelected = Array.isEmpty selectedIdxs |> not },
+        selectedIdxs
 
-    let selectCounters indexes (tower: Tower) =
-        indexes
-        |> List.iter (fun index -> tower[index] <- Counter.update (Counter.SetIsSelected true) tower[index])
 
-        { tower with
-            SelectedIdxs = tower.SelectedIdxs @ indexes }
-
-    let selectAllCounters (tower: Tower) =
-        selectCounters [ 0 .. tower.Counters.Length - 1 ] tower
-
-[<Struct>]
 type Cell =
     { CanBeSelected: bool
       Coords: Coordinates
@@ -56,52 +66,83 @@ type Cell =
 
 module Cell =
 
+    let setTower (cell: Cell) tower = { cell with Tower = tower }
+
+    let init (coords, countersValue) =
+        let counters = Array.init countersValue (ignore >> Counter.init)
+
+        { CanBeSelected = false
+          Coords = coords
+          Tower = Tower.create counters }
+
     type Msg =
         | CounterMsg of int * Counter.Msg
+        | DeselectCounters
         | SetTowerExpanded of bool
 
-    let init () =
-        { CanBeSelected = false
-          Coords = Coordinates.create (-1, -1)
-          Tower = Tower.create [| Counter.init (); Counter.init (); Counter.init (); Counter.init () |] }
+    type SelectedIdxs =
+        | Selected of int array
+        | NoSelection
 
-    let update (msg: Msg) (state: Cell) : Cell =
+    let update (msg: Msg) (state: Cell) =
         match msg with
-        | CounterMsg(idx, Counter.SetIsSelected true) when state.Tower.IsExpanded ->
-            let tower' =
-                state.Tower |> Tower.deselectCounters |> Tower.selectCounter idx |> Tower.update
-
-            { state with Tower = tower' }
-        | CounterMsg(idx, Counter.AddSelection true) when state.Tower.IsExpanded ->
-            let tower' = state.Tower |> Tower.selectCounter idx |> Tower.update
-            { state with Tower = tower' }
-        | CounterMsg(_, Counter.SetIsSelected true)
-        | CounterMsg(_, Counter.AddSelection true) ->
-            let tower' = state.Tower |> Tower.selectAllCounters |> Tower.update
-            { state with Tower = tower' }
-
         | CounterMsg(idx, counterMsg) ->
-            let counter' = Counter.update counterMsg state.Tower.Counters[idx]
-            state.Tower[idx] <- counter'
+            match counterMsg with
+            | Counter.ChangeSelection add when state.Tower.IsExpanded ->
+                state.Tower
+                |> if not add then Tower.deselectCounters else id
+                |> Tower.updateCounter counterMsg idx
+                |> Tower.defineSelection
+                |> Tuple.map (setTower state) Selected
+            | Counter.ChangeSelection _ ->
+                Array.init state.Tower.Counters.Length id
+                |> Array.iter (Tower.updateCounterAt state.Tower counterMsg)
 
-            { state with
-                Tower = Tower.update state.Tower }
+                Tower.defineSelection state.Tower |> Tuple.map (setTower state) Selected
+            | _ -> Tower.updateCounter counterMsg idx state.Tower |> setTower state, NoSelection
+        | DeselectCounters -> state.Tower |> Tower.deselectCounters |> setTower state, NoSelection
         | SetTowerExpanded isExpanded ->
-            let tower' = Tower.deselectCounters state.Tower
+            state.Tower
+            |> Tower.deselectCounters
+            |> Tower.setIsExpanded isExpanded
+            |> setTower state,
+            NoSelection
 
-            { state with
-                Tower =
-                    { tower' with
-                        IsExpanded = isExpanded } }
+
+    let diagonal = 60.
+
+    let computeX coords =
+        1.73205080756 * diagonal * (float coords.C + (float coords.R) / 2.)
+
+    let computeY coords = 1.5 * diagonal * (float coords.R)
 
     let view (state: Cell) (dispatch: Msg -> unit) : IView =
-        TowerPanel.create
-            [ TowerPanel.background "Pink"
-              TowerPanel.deltaPadding (5, -11)
-              TowerPanel.expandFactor 3.5
-              TowerPanel.onIsExpandedChanged (SetTowerExpanded >> dispatch)
-              TowerPanel.children (
-                  state.Tower.Counters
-                  |> Array.mapi (fun i c -> Counter.view c (fun cMsg -> (i, cMsg) |> CounterMsg |> dispatch))
-                  |> Array.toList
+        let dispatchCounter = Library.dispatchwithIndex dispatch CounterMsg
+
+        HexItem.create
+            [ HexItem.diagonal diagonal
+              HexItem.left (computeX state.Coords)
+              HexItem.top (computeY state.Coords)
+              HexItem.background "transparent"
+              HexItem.backgroundOpacity 1
+              HexItem.borderThickness 3
+              HexItem.borderBrush "black"
+              HexItem.clipToBounds false
+              if state.Tower.IsSelected then
+                  HexItem.zIndex 1000
+              HexItem.content (
+                  TowerPanel.create
+                      [ TowerPanel.background "Pink"
+                        //TowerPanel.height Counter.Size
+                        //TowerPanel.width Counter.Size
+                        TowerPanel.horizontalAlignment HorizontalAlignment.Center
+                        TowerPanel.verticalAlignment VerticalAlignment.Center
+                        TowerPanel.deltaPadding (5, -11)
+                        TowerPanel.expandFactor 3.5
+                        TowerPanel.onIsExpandedChanged (SetTowerExpanded >> dispatch)
+                        TowerPanel.children (
+                            state.Tower.Counters
+                            |> Array.mapi (fun idx counter -> Counter.view counter (dispatchCounter idx))
+                            |> Array.toList
+                        ) ]
               ) ]

@@ -1,17 +1,14 @@
-﻿namespace NoRetreat.Model
+﻿namespace NoRetreat
 
 open System.IO
-open Elmish
 open FSharp.Data
+open Avalonia.Controls
+open Avalonia.Input
+open Avalonia.Media
+open Avalonia.Media.Imaging
 open Avalonia.FuncUI.DSL
 open Avalonia.FuncUI.Types
 open Avalonia.FuncUI.Helpers
-open Avalonia.Controls
-open Avalonia.Controls.Shapes
-open Avalonia.Media
-open Avalonia.Media.Imaging
-open Avalonia.Platform
-open Avalonia.Layout
 open NoRetreat.Extentions
 open NoRetreat.Controls
 open NoRetreat.Controls.EventLib
@@ -139,8 +136,7 @@ module Counter =
     open UnitData
 
     type Msg =
-        | SetIsSelected of bool
-        | AddSelection of bool
+        | ChangeSelection of add: bool
         | Flip of back: bool
 
     let rand = System.Random()
@@ -163,8 +159,7 @@ module Counter =
 
     let update (msg: Msg) (state: Counter) =
         match msg with
-        | SetIsSelected isSelected
-        | AddSelection isSelected -> { state with IsSelected = isSelected }
+        | ChangeSelection _ -> { state with IsSelected = not state.IsSelected }
         | Flip back ->
             let (Unit unitCounter) = state.Counter
 
@@ -229,14 +224,15 @@ module Counter =
 
     let private loadImage country unitInfo =
         sprintf "avares://NoRetreat/Assets/Units/%A/%s.PNG" country unitInfo.Name
-        |> Bitmap.Create
+        |> Bitmap.create
 
+    let Size = 70
     let view (state: Counter) (dispatch: Msg -> unit) : IView =
         let (Unit unit) = state.Counter
 
         Border.create
-            [ Border.height 70
-              Border.width 70
+            [ Border.height Size
+              Border.width Size
               if state.IsSelected then
                   match unit.Country with
                   | USSR -> "Green"
@@ -261,14 +257,14 @@ module Counter =
               else
                   Border.onPointerPressedExt2 (
                       splitByLeftButton,
-                      (fun e ->
-                          if e.KeyModifiers.HasFlag(Avalonia.Input.KeyModifiers.Control) then
-                              AddSelection true |> dispatch
-                          else
-                              SetIsSelected true |> dispatch),
-                      fun _ -> Flip false |> dispatch
+                      (fun e -> 
+                          if e.KeyModifiers.HasFlag(KeyModifiers.Control) then
+                              dispatch (ChangeSelection true)
+                          else if not state.IsSelected then
+                              dispatch (ChangeSelection false)),
+                      (fun _ -> Flip false |> dispatch),
+                      SubPatchOptions.OnChangeOf state.IsSelected
                   )
-
 
               Border.child (
                   match unit.CurrentSide with

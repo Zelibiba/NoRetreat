@@ -11,12 +11,12 @@ namespace HexGameControls
             InitializeComponent();
         }
 
-        public static readonly StyledProperty<int> DiagonalProperty =
-            AvaloniaProperty.Register<HexItem, int>(nameof(Diagonal));
+        public static readonly StyledProperty<double> DiagonalProperty =
+            AvaloniaProperty.Register<HexItem, double>(nameof(Diagonal));
         public static readonly StyledProperty<double> BackGroundOpacityProperty =
             AvaloniaProperty.Register<HexItem, double>(nameof(BackGroundOpacity), defaultValue: 0.0);
 
-        public int Diagonal
+        public double Diagonal
         {
             get => GetValue(DiagonalProperty);
             set => SetValue(DiagonalProperty, value);
@@ -33,7 +33,7 @@ namespace HexGameControls
 
             if (change.Property == DiagonalProperty)
             {
-                int size = Diagonal;
+                double size = Diagonal;
                 Height = 2 * size;
                 Width = 1.73205080756 * size;
             }

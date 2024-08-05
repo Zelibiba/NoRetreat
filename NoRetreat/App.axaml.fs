@@ -10,21 +10,20 @@ open Elmish
 open Avalonia.FuncUI.Hosts
 open Avalonia.FuncUI.Elmish
 
-open NoRetreat.Model
 
 type MainWindow() as this =
     inherit HostWindow()
     do
         base.Title <- "Counter Example"
         //base.Icon <- WindowIcon(System.IO.Path.Combine("Assets", "avalonia-logo.ico"))
-        base.Height <- 400.0
-        base.Width <- 400.0
+        base.Height <- 700.0
+        base.Width <- 700.0
 
         #if DEBUG
         base.AttachDevTools()
         #endif
 
-        Elmish.Program.mkSimple Cell.init Cell.update Cell.view
+        Elmish.Program.mkSimple Field.init Field.update Field.view
         |> Program.withHost this
         |> Program.withConsoleTrace
         |> Program.run
