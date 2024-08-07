@@ -24,28 +24,6 @@ namespace HexGameControls
         public TowerPanel() 
         {
             AffectsMeasure<TowerPanel>(DeltaPaddingProperty);
-            AffectsMeasure<TowerPanel>(ExpandFactorProperty);
-            AttachedToVisualTree += OnAttachedToVisualTree;
-            DetachedFromVisualTree += OnDetachedFromVisualTree;
-        }
-
-        #region Attached/Detached To Visual Tree
-        private void OnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
-        {
-            DoubleTapped += OnDoubleTapped;
-        }
-        private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
-        {
-            DoubleTapped -= OnDoubleTapped;
-        }
-        #endregion
-
-        // Двойной клик для раскрытия стопки.
-        private void OnDoubleTapped(object? sender, TappedEventArgs e)
-        {
-            e.Handled = true;
-            IsExpanded = !IsExpanded;
-            ArrangeOverride(DesiredSize);
         }
 
         #region DeltaPaddingProperty
@@ -64,41 +42,6 @@ namespace HexGameControls
             AvaloniaProperty.Register<TowerPanel, Size>(nameof(DeltaPadding));
         #endregion
 
-        #region ExpandFactorProperty
-        /// <summary>
-        /// Множитель, используемый для раскрытия стопки.
-        /// </summary>
-        public double ExpandFactor
-        {
-            get => GetValue(ExpandFactorProperty);
-            set => SetValue(ExpandFactorProperty, value);
-        }
-        /// <summary>
-        /// Свойство для <see cref="ExpandFactor"/>.
-        /// </summary>
-        public static readonly StyledProperty<double> ExpandFactorProperty =
-            AvaloniaProperty.Register<TowerPanel, double>(nameof(ExpandFactor), 1.0);
-        #endregion
-
-        #region IsExpandedProperty
-        bool _isExpanded = false;
-        /// <summary>
-        /// Флаг, показывающий, раскрыта ли башня.
-        /// </summary>
-        public bool IsExpanded
-        {
-            get => _isExpanded;
-            private set => SetAndRaise(IsExpandedProperty, ref _isExpanded, value);
-        }
-        /// <summary>
-        /// Свойство для <see cref="IsExpanded"/>.
-        /// </summary>
-        public static readonly DirectProperty<TowerPanel, bool> IsExpandedProperty =
-            AvaloniaProperty.RegisterDirect<TowerPanel, bool>(
-                nameof(IsExpanded),
-                o => o.IsExpanded,
-                (o, v) => o.IsExpanded = v);
-        #endregion
 
         protected override Size MeasureOverride(Size availableSize)
         {
@@ -115,12 +58,6 @@ namespace HexGameControls
                 return finalSize;
             
             Size padding = DeltaPadding;
-            double expandFactor = ExpandFactor;
-            if (IsExpanded)
-            {
-                padding = padding.WithHeight(padding.Height * expandFactor)
-                                 .WithWidth(padding.Width * expandFactor);
-            }
 
             var firstChild = Children[0];
             var rect = new Rect(0, 0, firstChild.DesiredSize.Width, firstChild.DesiredSize.Height);

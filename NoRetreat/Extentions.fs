@@ -1,8 +1,10 @@
 ﻿namespace NoRetreat
 
+[<AutoOpen>]
 module Extentions =
     open System
     open System.IO
+    open Avalonia.Input
     open Avalonia.Media.Imaging
     open Avalonia.Platform
 
@@ -15,4 +17,5 @@ module Extentions =
         static member create(s: string) : Bitmap =
             new Bitmap(Stream.create s)
 
-    
+    type DataFormats with
+        static member Counters = " counters"

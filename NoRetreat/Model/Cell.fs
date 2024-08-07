@@ -1,6 +1,7 @@
 ﻿namespace NoRetreat
 
 open Elmish
+open Avalonia.Input
 open Avalonia.Layout
 open Avalonia.FuncUI.DSL
 open Avalonia.FuncUI.Types
@@ -46,6 +47,13 @@ module Tower =
 
         { tower with IsSelected = false }
 
+    let selectAllCounters (tower: Tower) =
+        tower.Counters
+        |> Array.indexed
+        |> Array.filter (snd >> _.IsSelected >> not)
+        |> Array.iter (fst >> updateCounterAt tower (Counter.ChangeSelection false))
+
+        { tower with IsSelected = true }
 
     let defineSelection (tower: Tower) =
         let selectedIdxs =
@@ -58,6 +66,23 @@ module Tower =
             IsSelected = Array.isEmpty selectedIdxs |> not },
         selectedIdxs
 
+    let removeCounters idxs (tower: Tower) =
+        let removed = Array.map tower.get_Item idxs
+        let counters' = Array.except removed tower.Counters
+        let tower' = if counters'.Length <= 1 then setIsExpanded false tower else tower
+
+        { tower' with
+            Counters = counters'
+            IsSelected = false },
+        removed
+
+    let addCounters targetIdx newCounters (tower: Tower) =
+        let counters' = 
+            match targetIdx with
+            | Some idx -> Array.insertManyAt (idx + 1) newCounters tower.Counters
+            | None -> newCounters
+        { tower with Counters = counters' }
+
 
 type Cell =
     { CanBeSelected: bool
@@ -65,8 +90,8 @@ type Cell =
       Tower: Tower }
 
 module Cell =
-
-    let setTower (cell: Cell) tower = { cell with Tower = tower }
+    module Helpers =
+        let setTower (cell: Cell) tower = { cell with Tower = tower }
 
     let init (coords, countersValue) =
         let counters = Array.init countersValue (ignore >> Counter.init)
@@ -77,12 +102,16 @@ module Cell =
 
     type Msg =
         | CounterMsg of int * Counter.Msg
+        | ChangeTowerExpanded
+        | Dropped
         | DeselectCounters
-        | SetTowerExpanded of bool
+        | RemoveCounters of int array
+        | AddCounters of int option * Counter array
 
-    type SelectedIdxs =
-        | Selected of int array
-        | NoSelection
+    type ExtraData =
+        | SelectedIdxs of int array
+        | RemovedCounters of Counter array
+        | NoData
 
     let update (msg: Msg) (state: Cell) =
         match msg with
@@ -93,20 +122,35 @@ module Cell =
                 |> if not add then Tower.deselectCounters else id
                 |> Tower.updateCounter counterMsg idx
                 |> Tower.defineSelection
-                |> Tuple.map (setTower state) Selected
+                |> Tuple.map (Helpers.setTower state) SelectedIdxs
             | Counter.ChangeSelection _ ->
                 Array.init state.Tower.Counters.Length id
                 |> Array.iter (Tower.updateCounterAt state.Tower counterMsg)
 
-                Tower.defineSelection state.Tower |> Tuple.map (setTower state) Selected
-            | _ -> Tower.updateCounter counterMsg idx state.Tower |> setTower state, NoSelection
-        | DeselectCounters -> state.Tower |> Tower.deselectCounters |> setTower state, NoSelection
-        | SetTowerExpanded isExpanded ->
+                Tower.defineSelection state.Tower
+                |> Tuple.map (Helpers.setTower state) SelectedIdxs
+            | _ -> Tower.updateCounter counterMsg idx state.Tower |> Helpers.setTower state, NoData
+        | ChangeTowerExpanded ->
             state.Tower
             |> Tower.deselectCounters
-            |> Tower.setIsExpanded isExpanded
-            |> setTower state,
-            NoSelection
+            |> Tower.setIsExpanded (not state.Tower.IsExpanded)
+            |> Helpers.setTower state,
+            NoData
+        | Dropped -> state, NoData
+        | DeselectCounters -> state.Tower |> Tower.deselectCounters |> Helpers.setTower state, NoData
+        | RemoveCounters idxs ->
+            state.Tower
+            |> Tower.removeCounters idxs
+            |> Tuple.map (Helpers.setTower state) RemovedCounters
+        | AddCounters(idxOpt, counters) ->
+            state.Tower
+            |> Tower.addCounters idxOpt counters
+            |> if state.Tower.IsExpanded then
+                   id
+               else
+                   Tower.selectAllCounters
+            |> Tower.defineSelection
+            |> Tuple.map (Helpers.setTower state) SelectedIdxs
 
 
     let diagonal = 60.
@@ -129,7 +173,13 @@ module Cell =
               HexItem.borderBrush "black"
               HexItem.clipToBounds false
               if state.Tower.IsSelected then
-                  HexItem.zIndex 1000
+                  HexItem.zIndex 1
+
+              if state.Tower.Counters.Length = 0 then
+                  DragDrop.allowDrop true
+                  DragDrop.onDrop (fun e ->
+                      if e.Data.Contains(DataFormats.Counters) then dispatch Dropped)
+
               HexItem.content (
                   TowerPanel.create
                       [ TowerPanel.background "Pink"
@@ -137,9 +187,11 @@ module Cell =
                         //TowerPanel.width Counter.Size
                         TowerPanel.horizontalAlignment HorizontalAlignment.Center
                         TowerPanel.verticalAlignment VerticalAlignment.Center
-                        TowerPanel.deltaPadding (5, -11)
-                        TowerPanel.expandFactor 3.5
-                        TowerPanel.onIsExpandedChanged (SetTowerExpanded >> dispatch)
+                        if state.Tower.IsExpanded then
+                            TowerPanel.deltaPadding (17.5, -38.5)
+                        else
+                            TowerPanel.deltaPadding (5, -11)
+                        TowerPanel.onDoubleTapped (fun _ -> dispatch ChangeTowerExpanded)
                         TowerPanel.children (
                             state.Tower.Counters
                             |> Array.mapi (fun idx counter -> Counter.view counter (dispatchCounter idx))

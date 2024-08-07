@@ -1,6 +1,7 @@
 ﻿namespace NoRetreat.Controls
 
 open Avalonia
+open Avalonia.Input
 open Avalonia.FuncUI.Builder
 open Avalonia.FuncUI.DSL
 open Avalonia.FuncUI.Types
@@ -21,12 +22,6 @@ module TowerPanel =
         static member deltaPadding<'t when 't :> TowerPanel>(horizontal: float, vertical: float) : IAttr<'t> =
             Size(horizontal, vertical) |> TowerPanel.deltaPadding
 
-        static member expandFactor<'t when 't :> TowerPanel>(value: float) : IAttr<'t> =
-            AttrBuilder<'t>.CreateProperty<float>(TowerPanel.ExpandFactorProperty, value, ValueNone)
-
-        static member onIsExpandedChanged<'t when 't :> TowerPanel>(func: bool -> unit, ?subPatchOptions) =
-            AttrBuilder<'t>.CreateSubscription<bool>(TowerPanel.IsExpandedProperty, func, ?subPatchOptions = subPatchOptions)
-
 [<AutoOpen>]
 module HexItem =
     let create (attrs: IAttr<HexItem> list) = ViewBuilder.Create<HexItem>(attrs)
@@ -37,3 +32,14 @@ module HexItem =
 
         static member backgroundOpacity<'t when 't :> HexItem>(value: float) : IAttr<'t> =
             AttrBuilder<'t>.CreateProperty<float>(HexItem.BackGroundOpacityProperty, value, ValueNone)
+
+[<AutoOpen>]
+module DraggableControl =
+    let create (attrs: IAttr<DraggableControl> list) = ViewBuilder.Create<DraggableControl>(attrs)
+
+    type DraggableControl with
+        static member sensitivity<'t when 't :> DraggableControl>(value: float) : IAttr<'t> =
+            AttrBuilder<'t>.CreateProperty<float>(DraggableControl.SensitivityProperty, value, ValueNone)
+
+        static member onDraggingStarted<'t when 't :> DraggableControl>(func: DraggingStartetEventArgs -> unit, ?subPatchOptions) =
+            AttrBuilder<'t>.CreateSubscription<DraggingStartetEventArgs>(DraggableControl.DraggingStartedEvent, func, ?subPatchOptions = subPatchOptions)

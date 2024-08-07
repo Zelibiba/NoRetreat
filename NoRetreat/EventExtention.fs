@@ -122,6 +122,20 @@ module EventExtentions =
                     ?subPatchOptions = subPatchOptions
                 )
 
+        static member onPointerMovedExt<'t when 't :> InputElement>
+            (
+                mapper: IObservable<PointerEventArgs> -> IObservable<PointerEventArgs>,
+                func: PointerEventArgs -> unit,
+                ?subPatchOptions
+            ) =
+            AttrBuilder<'t>
+                .CreateSubscriptionExt<PointerEventArgs>(
+                    InputElement.PointerMovedEvent,
+                    mapper,
+                    func,
+                    ?subPatchOptions = subPatchOptions
+                )
+
 module EventLib =
     let handled<'arg when 'arg :> RoutedEventArgs> (observable: IObservable<'arg>) =
         Observable.map (fun (e: 'arg) -> 
