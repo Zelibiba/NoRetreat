@@ -27,8 +27,8 @@ module HexItem =
     let create (attrs: IAttr<HexItem> list) = ViewBuilder.Create<HexItem>(attrs)
 
     type HexItem with
-        static member diagonal<'t when 't :> HexItem>(value: float) : IAttr<'t> =
-            AttrBuilder<'t>.CreateProperty<float>(HexItem.DiagonalProperty, value, ValueNone)
+        static member radius<'t when 't :> HexItem>(value: float) : IAttr<'t> =
+            AttrBuilder<'t>.CreateProperty<float>(HexItem.RadiusProperty, value, ValueNone)
 
         static member backgroundOpacity<'t when 't :> HexItem>(value: float) : IAttr<'t> =
             AttrBuilder<'t>.CreateProperty<float>(HexItem.BackGroundOpacityProperty, value, ValueNone)

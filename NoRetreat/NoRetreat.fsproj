@@ -7,14 +7,17 @@
 
   <ItemGroup>
      <AvaloniaResource Include="Assets\**" />
-     <Compile Include="Library.fs" />
   </ItemGroup>
 	
   <ItemGroup>
+    <Content Include="Assets\Hexes.xml" />
     <Content Include="Assets\avalonia-logo.ico" />
+    <Content Include="Assets\UnitCounters.xml" />
+    <Compile Include="Library.fs" />
     <Compile Include="Extentions.fs" />
     <Compile Include="EventExtention.fs" />
     <Compile Include="Controls.fs" />
+    <Compile Include="Model\Types.fs" />
     <Compile Include="Model\Coordinates.fs" />
     <Compile Include="Model\Counter.fs" />
     <Compile Include="Model\Cell.fs" />

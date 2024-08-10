@@ -1,0 +1,1171 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Hexes>
+	<row value="-10">
+		<hex column="8" type="Forest" sea="Baltic"/>
+		<hex column="9" type="Forest" sea="Baltic">
+			<river>1,0</river>
+		</hex>
+	</row>
+	<row value="-9">
+		<hex column="-4" type="Open" sea="Baltic" mapEdge="Germany">
+			<river>1,-1</river>
+		</hex>
+		<hex column="-3" type="Open" sea="Baltic"/>
+		<hex column="-2" type="Open" sea="Baltic">
+			<river>1,0</river>
+		</hex>
+		<hex column="5" type="Forest" sea="Baltic"/>
+		<hex column="7" type="Forest" sea="Baltic"/>
+		<hex column="8" type="Open">
+			<river>0,1</river>
+			<blocked>1,0</blocked>
+		</hex>
+		<hex column="9" type="Marsh" sea="Baltic">
+			<river>0,-1</river>
+			<river>-1,0</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="10" type="Forest" sea="Baltic">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="11" type="Ленинград" sea="Baltic"/>
+	</row>
+	<row value="-8">
+		<hex column="-5" type="Open" mapEdge="Germany">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="-4" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="-3" type="Берлин">
+			<river>0,1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="-2" type="Open" sea="Baltic">
+			<river>-1,0</river>
+			<river>0,-1</river>
+		</hex>
+		<hex column="-1" type="Open" sea="Baltic"/>
+		<hex column="0" type="Open" sea="Baltic"/>
+		<hex column="4" type="Forest" sea="Baltic"/>
+		<hex column="5" type="Forest" sea="Baltic">
+			<river>0,1</river>
+		</hex>
+		<hex column="6" type="Рига" sea="Baltic">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="7" type="Open">
+			<blocked>0,1</blocked>
+		</hex>
+		<hex column="8" type="Forest">
+			<river>1,-1</river>
+			<blocked>0,-1</blocked>
+			<blocked>-1,0</blocked>
+		</hex>
+		<hex column="9" type="Forest">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="10" type="Forest">
+			<river>0,-1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="11" type="Marsh">
+			<river>1,-1</river>
+			<river>1,0</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="12" type="Marsh">
+			<river>0,-1</river>
+		</hex>
+		<hex column="13" type="Marsh">
+			<river>1,0</river>
+			<blocked>0,1</blocked>
+		</hex>
+		<hex column="14" type="Marsh" mapEdge="USSR">
+			<blocked>0,-1</blocked>
+		</hex>
+		<hex column="15" type="Marsh" mapEdge="USSR"/>
+		<hex column="16" type="Marsh" mapEdge="USSR"/>
+	</row>
+	<row value="-7">
+		<hex column="-5" type="Open" mapEdge="Germany">
+			<river>-1,1</river>
+			<river>0,1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="-4" type="Open">
+			<river>0,-1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="-3" type="Open">
+			<river>-1,0</river>
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="-2" type="Познань"/>
+		<hex column="-1" type="Open"/>
+		<hex column="0" type="Open" sea="Baltic">
+			<river>1,0</river>
+		</hex>
+		<hex column="1" type="Open" sea="Baltic">
+			<river>0,-1</river>
+		</hex>
+		<hex column="2" type="Кёнгсберг" sea="Baltic">
+			<river>0,1</river>
+		</hex>
+		<hex column="3" type="Open" sea="Baltic">
+			<river>0,-1</river>
+			<river>1,-1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="4" type="Open">
+			<river>1,-1</river>
+		</hex>
+		<hex column="5" type="Open">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="6" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="7" type="Forest">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="8" type="Open">
+			<river>0,-1</river>
+		</hex>
+		<hex column="9" type="Open">
+			<river>0,1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="10" type="Marsh">
+			<river>0,-1</river>
+			<river>-1,0</river>
+			<river>-1,1</river>
+		</hex>
+		<hex column="11" type="Forest">
+			<river>-1,0</river>
+		</hex>
+		<hex column="12" type="Forest">
+			<river>0,1</river>
+		</hex>
+		<hex column="13" type="Forest">
+			<river>-1,0</river>
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="14" type="Forest"/>
+		<hex column="15" type="Marsh" mapEdge="USSR"/>
+	</row>
+	<row value="-6">
+		<hex column="-6" type="Mountain" mapEdge="Germany"/>
+		<hex column="-5" type="Mountain">
+			<river>-1,0</river>
+		</hex>
+		<hex column="-4" type="Open">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="-3" type="Open"/>
+		<hex column="-2" type="Open"/>
+		<hex column="-1" type="Open">
+			<river>0,1</river>
+		</hex>
+		<hex column="0" type="Open">
+			<river>-1,0</river>
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="1" type="Forest"/>
+		<hex column="2" type="Open">
+			<river>-1,1</river>
+		</hex>
+		<hex column="3" type="Open">
+			<river>-1,0</river>
+			<river>-1,1</river>
+			<river>0,1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="4" type="Open">
+			<river>0,-1</river>
+		</hex>
+		<hex column="5" type="Open">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="6" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="7" type="Open">
+			<river>1,-1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="8" type="Forest">
+			<river>1,-1</river>
+		</hex>
+		<hex column="9" type="Mountain">
+			<river>-1,0</river>
+		</hex>
+		<hex column="10" type="Open"/>
+		<hex column="11" type="Open"/>
+		<hex column="12" type="Forest">
+			<river>-1,1</river>
+			<river>0,1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="13" type="Open">
+			<river>0,-1</river>
+		</hex>
+		<hex column="14" type="Forest"/>
+		<hex column="15" type="Marsh" mapEdge="USSR"/>
+	</row>
+	<row value="-5">
+		<hex column="-7" type="Mountain" mapEdge="Germany"/>
+		<hex column="-6" type="Прага"/>
+		<hex column="-5" type="Mountain"/>
+		<hex column="-4" type="Бреслау">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="-3" type="Open">
+			<river>0,-1</river>
+		</hex>
+		<hex column="-2" type="Open"/>
+		<hex column="-1" type="Варшава">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="0" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="1" type="Forest"/>
+		<hex column="2" type="Open">
+			<river>0,1</river>
+		</hex>
+		<hex column="3" type="Open">
+			<river>-1,0</river>
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="4" type="Open"/>
+		<hex column="5" type="Open">
+			<river>-1,1</river>
+		</hex>
+		<hex column="6" type="Open">
+			<river>-1,0</river>
+			<river>-1,1</river>
+		</hex>
+		<hex column="7" type="Forest">
+			<river>-1,0</river>
+			<river>-1,1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="8" type="Forest"/>
+		<hex column="9" type="Forest">
+			<river>1,-1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="10" type="Калинин">
+			<river>1,-1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="11" type="Open">
+			<river>1,-1</river>
+			<river>1,0</river>
+			<blocked>0,1</blocked>
+		</hex>
+		<hex column="12" type="Open">
+			<river>-1,0</river>
+			<blocked>0,-1</blocked>
+			<blocked>1,-1</blocked>
+		</hex>
+		<hex column="13" type="Open"/>
+		<hex column="14" type="Forest" mapEdge="USSR"/>
+	</row>
+	<row value="-4">
+		<hex column="-7" type="Mountain" mapEdge="Germany">
+			<river>1,-1</river>
+		</hex>
+		<hex column="-6" type="Open"/>
+		<hex column="-5" type="Open"/>
+		<hex column="-4" type="Open"/>
+		<hex column="-3" type="Open"/>
+		<hex column="-2" type="Open"/>
+		<hex column="-1" type="Open">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="0" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="1" type="Open"/>
+		<hex column="2" type="Open">
+			<river>-1,1</river>
+		</hex>
+		<hex column="3" type="Минск"/>
+		<hex column="4" type="Open"/>
+		<hex column="5" type="Open">
+			<river>1,0</river>
+		</hex>
+		<hex column="6" type="Open">
+			<river>0,1</river>
+			<river>1,0</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="7" type="Forest">
+			<river>-1,0</river>
+			<river>0,-1</river>
+		</hex>
+		<hex column="8" type="Open">
+			<river>-1,1</river>
+		</hex>
+		<hex column="9" type="Forest">
+			<river>-1,0</river>
+			<river>-1,1</river>
+		</hex>
+		<hex column="10" type="Forest">
+			<river>-1,0</river>
+			<river>-1,1</river>
+		</hex>
+		<hex column="11" type="Open">
+			<river>-1,0</river>
+			<river>0,1</river>
+			<blocked>-1,1</blocked>
+		</hex>
+		<hex column="12" type="Ярославль">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="13" type="Open"/>
+		<hex column="14" type="Forest" mapEdge="USSR"/>
+	</row>
+	<row value="-3">
+		<hex column="-8" type="Open" mapEdge="Germany">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="-7" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="-6" type="Open"/>
+		<hex column="-5" type="Mountain"/>
+		<hex column="-4" type="Open"/>
+		<hex column="-3" type="Open"/>
+		<hex column="-2" type="Open"/>
+		<hex column="-1" type="Open">
+			<river>-1,1</river>
+			<river>0,1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="0" type="Open">
+			<river>0,-1</river>
+		</hex>
+		<hex column="1" type="Forest">
+			<river>1,-1</river>
+		</hex>
+		<hex column="2" type="Forest"/>
+		<hex column="3" type="Forest">
+			<river>1,0</river>
+		</hex>
+		<hex column="4" type="Open">
+			<river>1,-1</river>
+			<river>1,0</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="5" type="Open">
+			<river>0,-1</river>
+			<river>-1,0</river>
+			<river>-1,1</river>
+		</hex>
+		<hex column="6" type="Смоленск">
+			<river>-1,0</river>
+		</hex>
+		<hex column="7" type="Open"/>
+		<hex column="8" type="Forest">
+			<river>1,0</river>
+		</hex>
+		<hex column="9" type="Москва">
+			<river>1,-1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="10" type="Open">
+			<river>1,-1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="11" type="Open">
+			<river>1,-1</river>
+			<river>1,0</river>
+			<river>0,1</river>
+			<river>-1,1</river>
+		</hex>
+		<hex column="12" type="Forest">
+			<river>1,-1</river>
+			<river>0,-1</river>
+		</hex>
+		<hex column="13" type="Open" mapEdge="USSR"/>
+	</row>
+	<row value="-2">
+		<hex column="-9" type="Open" mapEdge="Germany"/>
+		<hex column="-8" type="Вена">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="-7" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="-6" type="Open">
+			<river>1,-1</river>
+		</hex>
+		<hex column="-5" type="Mountain"/>
+		<hex column="-4" type="Mountain"/>
+		<hex column="-3" type="Open"/>
+		<hex column="-2" type="Open"/>
+		<hex column="-1" type="Forest">
+			<river>-1,0</river>
+		</hex>
+		<hex column="0" type="Marsh">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="1" type="Marsh">
+			<river>0,-1</river>
+			<river>1,-1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="2" type="Marsh">
+			<river>1,-1</river>
+			<river>1,0</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="3" type="Forest">
+			<river>0,-1</river>
+			<river>-1,0</river>
+			<river>-1,1</river>
+		</hex>
+		<hex column="4" type="Open">
+			<river>-1,0</river>
+		</hex>
+		<hex column="5" type="Open"/>
+		<hex column="6" type="Open">
+			<river>1,0</river>
+		</hex>
+		<hex column="7" type="Open">
+			<river>1,-1</river>
+			<river>1,0</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="8" type="Тула">
+			<river>0,-1</river>
+			<river>-1,0</river>
+			<river>-1,1</river>
+		</hex>
+		<hex column="9" type="Forest">
+			<river>-1,0</river>
+			<river>-1,1</river>
+		</hex>
+		<hex column="10" type="Open">
+			<river>-1,0</river>
+			<river>-1,1</river>
+		</hex>
+		<hex column="11" type="Forest">
+			<river>-1,0</river>
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="12" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="13" type="Forest" mapEdge="USSR">
+			<river>1,-1</river>
+		</hex>
+	</row>
+	<row value="-1">
+		<hex column="-10" type="Mountain" mapEdge="Germany"/>
+		<hex column="-9" type="Open"/>
+		<hex column="-8" type="Open">
+			<river>-1,1</river>
+			<blocked>1,0</blocked>
+		</hex>
+		<hex column="-7" type="Open">
+			<river>-1,0</river>
+			<river>-1,1</river>
+			<river>0,1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="-6" type="Open">
+			<river>0,-1</river>
+		</hex>
+		<hex column="-5" type="Open"/>
+		<hex column="-4" type="Mountain"/>
+		<hex column="-3" type="Люблин"/>
+		<hex column="-2" type="Open"/>
+		<hex column="-1" type="Forest"/>
+		<hex column="0" type="Marsh">
+			<river>-1,1</river>
+		</hex>
+		<hex column="1" type="Marsh">
+			<river>-1,0</river>
+			<river>-1,1</river>
+			<river>0,1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="2" type="Forest">
+			<river>-1,0</river>
+			<river>0,-1</river>
+		</hex>
+		<hex column="3" type="Open"/>
+		<hex column="4" type="Open"/>
+		<hex column="5" type="Open">
+			<river>0,1</river>
+		</hex>
+		<hex column="6" type="Forest">
+			<river>0,-1</river>
+			<river>-1,0</river>
+			<river>-1,1</river>
+		</hex>
+		<hex column="7" type="Open">
+			<river>-1,0</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="8" type="Open"/>
+		<hex column="9" type="Open"/>
+		<hex column="10" type="Forest"/>
+		<hex column="11" type="Горький">
+			<river>-1,1</river>
+		</hex>
+		<hex column="12" type="Open" mapEdge="USSR">
+			<river>-1,1</river>
+			<river>-1,0</river>
+		</hex>
+	</row>
+	<row value="0">
+		<hex column="0" type="Киев">
+			<river>0,1</river>
+		</hex>
+		<hex column="1" type="Open">
+			<river>-1,0</river>
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="2" type="Open"/>
+		<hex column="3" type="Open"/>
+		<hex column="4" type="Open"/>
+		<hex column="5" type="Open"/>
+		<hex column="6" type="Open">
+			<river>0,1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="7" type="Open">
+			<river>0,-1</river>
+			<river>-1,0</river>
+		</hex>
+		<hex column="8" type="Open"/>
+		<hex column="9" type="Forest"/>
+		<hex column="10" type="Forest"/>
+		<hex column="11" type="Open"/>
+		<hex column="12" type="Open" mapEdge="USSR"/>
+		<hex column="-1" type="Open"/>
+		<hex column="-2" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="-3" type="Open">
+			<river>0,1</river>
+		</hex>
+		<hex column="-4" type="Mountain"/>
+		<hex column="-5" type="Open"/>
+		<hex column="-6" type="Open"/>
+		<hex column="-7" type="Будапешт">
+			<river>-1,0</river>
+			<river>0,-1</river>
+		</hex>
+		<hex column="-8" type="Open">
+			<river>0,1</river>
+			<river>1,0</river>
+			<blocked>-1,0</blocked>
+		</hex>
+		<hex column="-9" type="Open"/>
+		<hex column="-10" type="Open">
+			<river>1,-1</river>
+		</hex>
+		<hex column="-11" type="Open" mapEdge="Germany"/>
+	</row>
+	<row value="1">
+		<hex column="-12" type="Open" sea="Adriatic" mapEdge="Germany"/>
+		<hex column="-11" type="Open">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="-10" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="-9" type="Open">
+			<river>1,-1</river>
+			<river>1,0</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="-8" type="Open">
+			<river>0,-1</river>
+			<river>-1,0</river>
+		</hex>
+		<hex column="-7" type="Open"/>
+		<hex column="-6" type="Open"/>
+		<hex column="-5" type="Open"/>
+		<hex column="-4" type="Mountain"/>
+		<hex column="-3" type="Open">
+			<river>1,-1</river>
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="-2" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="-1" type="Open"/>
+		<hex column="0" type="Open">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="1" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="2" type="Open"/>
+		<hex column="3" type="Open"/>
+		<hex column="4" type="Open"/>
+		<hex column="5" type="Open">
+			<river>0,1</river>
+		</hex>
+		<hex column="6" type="Воронеж">
+			<river>-1,0</river>
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="7" type="Open"/>
+		<hex column="8" type="Open">
+			<river>1,0</river>
+		</hex>
+		<hex column="9" type="Forest">
+			<river>1,-1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="10" type="Open"/>
+		<hex column="11" type="Forest" mapEdge="USSR">
+			<river>1,0</river>
+		</hex>
+	</row>
+	<row value="2">
+		<hex column="-12" type="Open" sea="Adriatic"/>
+		<hex column="-11" type="Mountain">
+			<river>-1,1</river>
+		</hex>
+		<hex column="-10" type="Open">
+			<river>-1,0</river>
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="-9" type="Open">
+			<river>-1,0</river>
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="-8" type="Open"/>
+		<hex column="-7" type="Mountain"/>
+		<hex column="-6" type="Open"/>
+		<hex column="-5" type="Mountain"/>
+		<hex column="-4" type="Mountain">
+			<river>-1,1</river>
+			<river>0,1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="-3" type="Open">
+			<river>0,-1</river>
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="-2" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="-1" type="Open"/>
+		<hex column="0" type="Open">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="1" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="2" type="Open"/>
+		<hex column="3" type="Харьков">
+			<river>0,1</river>
+		</hex>
+		<hex column="4" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="5" type="Open">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="6" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="7" type="Open">
+			<river>0,1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="8" type="Open">
+			<river>-1,0</river>
+			<river>0,-1</river>
+			<river>-1,1</river>
+		</hex>
+		<hex column="9" type="Open">
+			<river>-1,0</river>
+		</hex>
+		<hex column="10" type="Open">
+			<river>0,1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="11" type="Open" mapEdge="USSR">
+			<river>-1,0</river>
+			<river>0,-1</river>
+		</hex>
+	</row>
+	<row value="3">
+		<hex column="-11" type="Mountain"/>
+		<hex column="-10" type="Белград">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="-9" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="-8" type="Mountain"/>
+		<hex column="-7" type="Open"/>
+		<hex column="-6" type="Mountain"/>
+		<hex column="-5" type="Mountain">
+			<river>0,1</river>
+		</hex>
+		<hex column="-4" type="Open">
+			<river>-1,0</river>
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="-3" type="Open">
+			<river>-1,1</river>
+			<river>0,1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="-2" type="Open">
+			<river>0,-1</river>
+		</hex>
+		<hex column="-1" type="Open"/>
+		<hex column="0" type="Open">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="1" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="2" type="Open"/>
+		<hex column="3" type="Open">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="4" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="5" type="Open">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="6" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+			<river>1,0</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="7" type="Open">
+			<river>-1,0</river>
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="8" type="Open"/>
+		<hex column="9" type="Саратов">
+			<river>0,1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="10" type="Open" mapEdge="USSR">
+			<river>-1,0</river>
+			<river>0,-1</river>
+		</hex>
+	</row>
+	<row value="4">
+		<hex column="-11" type="Mountain"/>
+		<hex column="-10" type="Open">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="-9" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="-8" type="Mountain"/>
+		<hex column="-7" type="Mountain"/>
+		<hex column="-6" type="Open">
+			<river>1,0</river>
+		</hex>
+		<hex column="-5" type="Open">
+			<river>1,-1</river>
+			<river>1,0</river>
+			<river>0,1</river>
+			<river>-1,1</river>
+		</hex>
+		<hex column="-4" type="Open" sea="Black">
+			<river>0,-1</river>
+			<river>1,-1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="-3" type="Одесса" sea="Black">
+			<river>-1,0</river>
+			<river>0,-1</river>
+		</hex>
+		<hex column="-2" type="Open" sea="Black">
+			<river>1,0</river>
+		</hex>
+		<hex column="-1" type="Open">
+			<river>1,0</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="0" type="Днепропетровск">
+			<river>1,0</river>
+			<river>1,-1</river>
+			<river>0,1</river>
+			<river>-1,1</river>
+		</hex>
+		<hex column="1" type="Open">
+			<river>0,-1</river>
+		</hex>
+		<hex column="2" type="Open"/>
+		<hex column="3" type="Open">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="4" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="5" type="Open">
+			<river>-1,1</river>
+		</hex>
+		<hex column="6" type="Open">
+			<river>-1,0</river>
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="7" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="8" type="Open">
+			<river>0,-1</river>
+			<river>1,0</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="9" type="Open">
+			<river>-1,0</river>
+			<river>0,-1</river>
+		</hex>
+		<hex column="10" type="Forest" mapEdge="USSR"/>
+	</row>
+	<row value="5">
+		<hex column="-10" type="Mountain">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="-9" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="-8" type="Open"/>
+		<hex column="-7" type="Open">
+			<river>1,0</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="-6" type="Marsh">
+			<river>0,-1</river>
+			<river>-1,0</river>
+			<river>-1,1</river>
+		</hex>
+		<hex column="-5" type="Open" sea="Black">
+			<river>-1,0</river>
+			<river>-1,1</river>
+			<blocked>1,-1</blocked>
+		</hex>
+		<hex column="-2" type="Open" sea="Black">
+			<river>-1,0</river>
+			<river>-1,1</river>
+			<blocked>1,-1</blocked>
+			<blocked>1,0</blocked>
+		</hex>
+		<hex column="-1" type="Open" sea="Black">
+			<river>-1,0</river>
+			<river>-1,1</river>
+		</hex>
+		<hex column="0" type="Open">
+			<river>-1,0</river>
+		</hex>
+		<hex column="1" type="Open"/>
+		<hex column="2" type="Сталино"/>
+		<hex column="3" type="Open">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="4" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="5" type="Open"/>
+		<hex column="6" type="Open">
+			<river>-1,1</river>
+			<river>0,1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="7" type="Open">
+			<river>0,-1</river>
+			<river>0,1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="8" type="Open">
+			<river>-1,0</river>
+			<river>0,-1</river>
+		</hex>
+		<hex column="9" type="Open" mapEdge="USSR"/>
+	</row>
+	<row value="6">
+		<hex column="-10" type="Open">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="-9" type="Open">
+			<river>0,-1</river>
+		</hex>
+		<hex column="-8" type="Бухарест">
+			<river>0,1</river>
+		</hex>
+		<hex column="-7" type="Open" sea="Black">
+			<river>-1,0</river>
+			<river>0,-1</river>
+		</hex>
+		<hex column="-6" type="Open" sea="Black">
+			<blocked>-1,1</blocked>
+		</hex>
+		<hex column="-3" type="Open" sea="Black">
+			<blocked>-1,1</blocked>
+		</hex>
+		<hex column="-2" type="Marsh" sea="Black">
+			<blocked>-1,0</blocked>
+		</hex>
+		<hex column="1" type="Open">
+			<blocked>1,-1</blocked>
+			<blocked>1,0</blocked>
+		</hex>
+		<hex column="2" type="Ростов">
+			<river>1,-1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="3" type="Open">
+			<river>1,-1</river>
+			<river>1,0</river>
+			<river>0,1</river>
+			<river>-1,1</river>
+		</hex>
+		<hex column="4" type="Open">
+			<river>1,-1</river>
+			<river>1,0</river>
+			<river>0,-1</river>
+		</hex>
+		<hex column="5" type="Open">
+			<river>1,-1</river>
+			<river>1,0</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="6" type="Сталинград">
+			<river>-1,0</river>
+			<river>0,-1</river>
+			<river>0,1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="7" type="Open">
+			<river>-1,0</river>
+			<river>0,-1</river>
+		</hex>
+		<hex column="8" type="Open"/>
+		<hex column="9" type="Open" mapEdge="USSR"/>
+	</row>
+	<row value="7">
+		<hex column="-3" type="Севастополь" sea="Black"/>
+		<hex column="-2" type="Open" sea="Black"/>
+		<hex column="0" type="Marsh">
+			<river>1,-1</river>
+			<blocked>-1,1</blocked>
+		</hex>
+		<hex column="1" type="Open">
+			<river>-1,1</river>
+			<blocked>-1,0</blocked>
+		</hex>
+		<hex column="2" type="Open">
+			<river>-1,1</river>
+			<river>-1,0</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="3" type="Open">
+			<river>-1,1</river>
+			<river>-1,0</river>
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="4" type="Open">
+			<river>-1,1</river>
+			<river>-1,0</river>
+		</hex>
+		<hex column="5" type="Open">
+			<river>0,1</river>
+			<river>-1,0</river>
+		</hex>
+		<hex column="6" type="Marsh">
+			<river>-1,0</river>
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="7" type="Open"/>
+		<hex column="8" type="Open" mapEdge="USSR"/>
+	</row>
+	<row value="8">
+		<hex column="-2" type="KerchStrait" sea="Black"/>
+		<hex column="-1" type="Новороссийск" sea="Black">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="0" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="1" type="Open">
+			<river>1,-1</river>
+		</hex>
+		<hex column="2" type="Open">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="3" type="Open">
+			<river>0,-1</river>
+		</hex>
+		<hex column="4" type="Open"/>
+		<hex column="5" type="Open">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="6" type="Marsh">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="7" type="Open"/>
+		<hex column="8" type="Open" mapEdge="USSR"/>
+	</row>
+	<row value="9">
+		<hex column="-1" type="Mountain" sea="Black">
+			<river>-1,1</river>
+		</hex>
+		<hex column="0" type="Open">
+			<river>-1,0</river>
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="1" type="Open">
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="2" type="Open"/>
+		<hex column="3" type="Open"/>
+		<hex column="4" type="Open"/>
+		<hex column="5" type="Open">
+			<river>-1,1</river>
+			<river>0,1</river>
+			<river>1,0</river>
+		</hex>
+		<hex column="6" type="Marsh">
+			<river>0,-1</river>
+		</hex>
+		<hex column="7" type="Marsh" sea="Caspian" mapEdge="USSR"/>
+	</row>
+	<row value="10">
+		<hex column="-1" type="Mountain" sea="Black"/>
+		<hex column="0" type="Mountain">
+			<river>-1,1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="1" type="Open">
+			<river>0,-1</river>
+		</hex>
+		<hex column="2" type="Open">
+			<river>1,0</river>
+		</hex>
+		<hex column="3" type="Open">
+			<river>1,0</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="4" type="Open">
+			<river>1,0</river>
+			<river>1,-1</river>
+			<river>0,1</river>
+		</hex>
+		<hex column="5" type="Астрахань" sea="Caspian">
+			<river>-1,0</river>
+			<river>0,-1</river>
+			<river>1,-1</river>
+		</hex>
+		<hex column="6" type="Marsh" sea="Caspian"/>
+	</row>
+	<row value="11">
+		<hex column="-1" type="Mountain" sea="Black" mapEdge="USSR"/>
+		<hex column="0" type="Mountain" mapEdge="USSR"/>
+		<hex column="1" type="Mountain" mapEdge="USSR"/>
+		<hex column="2" type="Open" mapEdge="USSR">
+			<river>-1,0</river>
+			<river>-1,1</river>
+		</hex>
+		<hex column="3" type="Open" mapEdge="USSR">
+			<river>-1,0</river>
+			<river>-1,1</river>
+		</hex>
+		<hex column="4" type="Open" sea="Caspian" mapEdge="USSR">
+			<river>-1,0</river>
+			<river>-1,1</river>
+		</hex>
+	</row>
+</Hexes>

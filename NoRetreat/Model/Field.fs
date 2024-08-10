@@ -3,16 +3,17 @@
 #nowarn "25"
 
 open System.Collections.Generic
-open System.Collections.Immutable
 open Avalonia.Controls
 open Avalonia.Layout
+open Avalonia.Threading
+open Avalonia.Input
+open Avalonia.Media.Imaging
 open Avalonia.FuncUI.DSL
 open Avalonia.FuncUI.Types
 open Elmish
 open NoRetreat.Controls
 open HexGameControls
-open Avalonia.Threading
-open Avalonia.Input
+
 
 [<Struct>]
 type SelectedCountersID =
@@ -54,10 +55,7 @@ module Field =
           SelectedLoc = None }
 
     let init () =
-        let coordinates = [ (0, 0); (0, 1); (0, 2); (1, 0); (1, 1); (2, 0) ] |> List.map Coordinates.create
-        let countersVal = [      0;      4;      4;      4;      0;      0 ]
-
-        List.map2 (fun coords cVal -> KeyValuePair.Create(coords, Cell.init (coords, cVal))) coordinates countersVal
+        HexData.hexes
         |> Dictionary
         |> create
 
@@ -124,13 +122,30 @@ module Field =
     let view (state: Field) (dispatch: Msg -> unit) : IView =
         let dispatchCell = Library.dispatchwithIndex dispatch CellMsg
 
-        Canvas.create
-            [ Canvas.background "gold"
-              Canvas.margin (100, 200, 0, 0)
-              Canvas.horizontalAlignment HorizontalAlignment.Stretch
-              Canvas.verticalAlignment VerticalAlignment.Stretch
-              Canvas.children (
-                  state.Cells.Values
-                  |> Seq.map (fun cell -> Cell.view cell (dispatchCell cell.Coords))
-                  |> Seq.toList
-              ) ]
+        ScrollPane.create [
+            
+            ScrollPane.child (
+                Panel.create [
+                    Panel.height 3365
+                    Panel.width 5750
+                    Panel.children [
+                        Image.create [ 
+                            Image.source  ("avares://NoRetreat/Assets/Images/Map.jpg" |> Bitmap.create)
+                            Image.stretch Avalonia.Media.Stretch.None
+                        ]
+                        Canvas.create [
+                          Canvas.horizontalAlignment HorizontalAlignment.Stretch
+                          Canvas.verticalAlignment VerticalAlignment.Stretch
+                          Canvas.children (
+                              state.Cells.Values
+                              |> Seq.map (fun cell -> Cell.view cell (dispatchCell cell.Coords))
+                              |> Seq.toList
+                          )
+                        ]
+                        
+                    ]
+                ]
+            )
+        ]
+
+        

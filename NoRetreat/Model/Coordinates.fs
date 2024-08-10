@@ -1,5 +1,6 @@
 ﻿namespace NoRetreat
 
+
 [<Struct>]
 type Coordinates =
     { R: int
@@ -18,6 +19,15 @@ type Coordinates =
 module Coordinates =
 
     let create (row, column) = { R = row; C = column }
+
+    let fromString (str: string) =
+        str.Split(',')
+        |> Array.map System.Int32.TryParse
+        |> function
+            | [| (true, r); (true, c) |] -> create (r, c)
+            | _ -> failwithf "Can't parse to Coordinates: %s" str
+        
+            
 
     let private adjacentCoordsPattern =
         [ (1, -1); (0, -1); (1, 0); (-1, 1); (0, 1); (-1, 0) ]

@@ -11,15 +11,15 @@ namespace HexGameControls
             InitializeComponent();
         }
 
-        public static readonly StyledProperty<double> DiagonalProperty =
-            AvaloniaProperty.Register<HexItem, double>(nameof(Diagonal));
+        public static readonly StyledProperty<double> RadiusProperty =
+            AvaloniaProperty.Register<HexItem, double>(nameof(Radius));
         public static readonly StyledProperty<double> BackGroundOpacityProperty =
-            AvaloniaProperty.Register<HexItem, double>(nameof(BackGroundOpacity), defaultValue: 0.0);
+            AvaloniaProperty.Register<HexItem, double>(nameof(BackGroundOpacity), defaultValue: 1.0);
 
-        public double Diagonal
+        public double Radius
         {
-            get => GetValue(DiagonalProperty);
-            set => SetValue(DiagonalProperty, value);
+            get => GetValue(RadiusProperty);
+            set => SetValue(RadiusProperty, value);
         }
         public double BackGroundOpacity
         {
@@ -31,9 +31,9 @@ namespace HexGameControls
         {
             base.OnPropertyChanged(change);
 
-            if (change.Property == DiagonalProperty)
+            if (change.Property == RadiusProperty)
             {
-                double size = Diagonal;
+                double size = Radius;
                 Height = 2 * size;
                 Width = 1.73205080756 * size;
             }

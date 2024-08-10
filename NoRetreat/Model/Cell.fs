@@ -1,7 +1,10 @@
 ﻿namespace NoRetreat
 
-open Elmish
+open System.IO
+open System.Collections.Generic
+open FSharp.Data
 open Avalonia.Input
+open Avalonia.Controls.Shapes
 open Avalonia.Layout
 open Avalonia.FuncUI.DSL
 open Avalonia.FuncUI.Types
@@ -23,11 +26,14 @@ type Tower =
             UpdateField = not this.UpdateField }
 
 module Tower =
+
     let create counters =
         { UpdateField = false
           Counters = counters
           IsExpanded = false
           IsSelected = false }
+
+    let none = create [||]
 
     let update (tower: Tower) = tower.Update()
 
@@ -83,22 +89,105 @@ module Tower =
             | None -> newCounters
         { tower with Counters = counters' }
 
+[<Struct>]
+type Terrain =
+    | Open
+    | Forest
+    | Marsh
+    | Mountain
+    | KerchStrait
+    | City of name: string
+
+    static member fromString(str) =
+        match str with
+        | "Open" -> Open
+        | "Forest" -> Forest
+        | "Marsh" -> Marsh
+        | "Mountain" -> Mountain
+        | "KerchStrait" -> KerchStrait
+        | _ -> City str
+
+[<Struct>]
+type Sea =
+    | Baltic
+    | Black
+    | Adriatic
+    | Caspian
+
+    static member fromString(str) =
+        match str with
+        | "Baltic" -> Baltic
+        | "Black" -> Black
+        | "Adriatic" -> Adriatic
+        | "Caspian" -> Caspian
+        | _ -> failwithf "Can't parse to Sea: %s" str
 
 type Cell =
     { CanBeSelected: bool
       Coords: Coordinates
+      Terrain: Terrain
+      Rivers: Coordinates array
+      Sea: Sea option
+      BlockedSides: Coordinates array
       Tower: Tower }
+
+module HexData =
+    type T =
+        XmlProvider<Schema="""
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+          <xs:element name="Hexes">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="row" maxOccurs="unbounded" minOccurs="0">
+                  <xs:complexType>
+                    <xs:sequence>
+                      <xs:element name="hex" maxOccurs="unbounded" minOccurs="0">
+                         <xs:complexType>
+                           <xs:sequence>
+                             <xs:element type="xs:string" name="river" maxOccurs="unbounded" minOccurs="0"/>
+                             <xs:element type="xs:string" name="blocked" maxOccurs="unbounded" minOccurs="0"/>
+                           </xs:sequence>
+                           <xs:attribute type="xs:int" name="column" use="required"/>
+                           <xs:attribute type="xs:string" name="type" use="required"/>
+                           <xs:attribute type="xs:string" name="mapEdge" use="optional"/>
+                           <xs:attribute type="xs:string" name="sea" use="optional"/>
+                         </xs:complexType>
+                      </xs:element>
+                    </xs:sequence>
+                    <xs:attribute type="xs:int" name="value" use="required"/>
+                  </xs:complexType>
+                </xs:element>
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+        </xs:schema>""">
+
+    let createfromHex row (hex: T.Hex) =
+        let edge = Option.map Country.fromString hex.MapEdge
+        let coords = Coordinates.create (row, hex.Column)
+        {
+        CanBeSelected = false
+        Coords = coords
+        Terrain = Terrain.fromString hex.Type
+        Rivers = Array.map (Coordinates.fromString >> ((+) coords)) hex.Rivers
+        Sea = Option.map Sea.fromString hex.Sea
+        BlockedSides = Array.map (Coordinates.fromString >> ((+) coords)) hex.Blockeds
+        Tower = Tower.none
+        }
+
+    let hexes = 
+        T.Load("avares://NoRetreat/Assets/Hexes.xml" |> Stream.create).Rows
+        |> Array.map (fun row -> Array.map (createfromHex row.Value >> (fun hex -> (hex.Coords, hex))) row.Hexs)
+        |> Array.concat
+        |> dict
+
+    let createFromCoords coords = hexes[coords]
 
 module Cell =
     module Helpers =
         let setTower (cell: Cell) tower = { cell with Tower = tower }
 
-    let init (coords, countersValue) =
-        let counters = Array.init countersValue (ignore >> Counter.init)
-
-        { CanBeSelected = false
-          Coords = coords
-          Tower = Tower.create counters }
+    let init = HexData.createFromCoords
 
     type Msg =
         | CounterMsg of int * Counter.Msg
@@ -153,24 +242,24 @@ module Cell =
             |> Tuple.map (Helpers.setTower state) SelectedIdxs
 
 
-    let diagonal = 60.
+    let diagonal = 92.2
 
     let computeX coords =
-        1.73205080756 * diagonal * (float coords.C + (float coords.R) / 2.)
+        1.73205080756 * diagonal * (float coords.C + (float coords.R) / 2.) + 2113.
 
-    let computeY coords = 1.5 * diagonal * (float coords.R)
+    let computeY coords = 1.5 * diagonal * (float coords.R) + 1601.
 
     let view (state: Cell) (dispatch: Msg -> unit) : IView =
         let dispatchCounter = Library.dispatchwithIndex dispatch CounterMsg
 
         HexItem.create
-            [ HexItem.diagonal diagonal
+            [ HexItem.radius diagonal
               HexItem.left (computeX state.Coords)
               HexItem.top (computeY state.Coords)
               HexItem.background "transparent"
-              HexItem.backgroundOpacity 1
-              HexItem.borderThickness 3
-              HexItem.borderBrush "black"
+              //HexItem.backgroundOpacity 0.5
+              //HexItem.borderThickness 3
+              HexItem.borderBrush "red"
               HexItem.clipToBounds false
               if state.Tower.IsSelected then
                   HexItem.zIndex 1
@@ -179,22 +268,23 @@ module Cell =
                   DragDrop.allowDrop true
                   DragDrop.onDrop (fun e ->
                       if e.Data.Contains(DataFormats.Counters) then dispatch Dropped)
-
-              HexItem.content (
-                  TowerPanel.create
-                      [ TowerPanel.background "Pink"
-                        //TowerPanel.height Counter.Size
-                        //TowerPanel.width Counter.Size
-                        TowerPanel.horizontalAlignment HorizontalAlignment.Center
-                        TowerPanel.verticalAlignment VerticalAlignment.Center
-                        if state.Tower.IsExpanded then
-                            TowerPanel.deltaPadding (17.5, -38.5)
-                        else
-                            TowerPanel.deltaPadding (5, -11)
-                        TowerPanel.onDoubleTapped (fun _ -> dispatch ChangeTowerExpanded)
-                        TowerPanel.children (
-                            state.Tower.Counters
-                            |> Array.mapi (fun idx counter -> Counter.view counter (dispatchCounter idx))
-                            |> Array.toList
-                        ) ]
-              ) ]
+              else
+                  HexItem.content (
+                      TowerPanel.create
+                          [ TowerPanel.background "Pink"
+                            //TowerPanel.height Counter.Size
+                            //TowerPanel.width Counter.Size
+                            TowerPanel.horizontalAlignment HorizontalAlignment.Center
+                            TowerPanel.verticalAlignment VerticalAlignment.Center
+                            if state.Tower.IsExpanded then
+                                TowerPanel.deltaPadding (17.5, -38.5)
+                            else
+                                TowerPanel.deltaPadding (5, -11)
+                            TowerPanel.onDoubleTapped (fun _ -> dispatch ChangeTowerExpanded)
+                            TowerPanel.children (
+                                state.Tower.Counters
+                                |> Array.mapi (fun idx counter -> Counter.view counter (dispatchCounter idx))
+                                |> Array.toList
+                            ) ]
+                  )
+            ]

@@ -15,17 +15,6 @@ open NoRetreat.Controls.EventLib
 open HexGameControls
 
 [<Struct>]
-type Country =
-    | USSR
-    | Germany
-
-    static member fromString(str) =
-        match str with
-        | "USSR" -> USSR
-        | "Germany" -> Germany
-        | _ -> failwith "Wrong Country string"
-
-[<Struct>]
 type UnitType =
     | Infantry
     | Regional
@@ -46,7 +35,7 @@ type UnitType =
         | "Tank" -> Tank
         | "SSMechanized" -> SSMechanized
         | "SSTank" -> SSTank
-        | _ -> failwith "Wrong UnitType string"
+        | _ -> failwithf "Can't parse to UnitType: %s" str
 
 [<Struct>]
 type AttackType =
@@ -59,7 +48,7 @@ type AttackType =
         | "Usual" -> Usual
         | "Passive" -> Passive
         | "NoZOC" -> NoZOC
-        | _ -> failwith "Wrong AttackType string"
+        | _ -> failwithf "Can't parse to AttackType: %s" str
 
 [<Struct>]
 type AttackInfo = { Strength: int; Type: AttackType }
@@ -95,36 +84,35 @@ module UnitCounter =
             CurrentSide = unitCounter.OtherSide
             OtherSide = unitCounter.CurrentSide }
 
-type UnitData =
-    XmlProvider<"""
-            <Units>
-				<Unit id="6" country="Germany">
-					<Side name="1Panzer" type="Tank">
-						<Strength type="Usual">7</Strength>
-						<Movement>6</Movement>
-					</Side>
-					<Side name="1Panzer_h" type="Tank">
-						<Strength type="Usual">5</Strength>
-						<Movement>6</Movement>
-					</Side>
-				</Unit>
-		        <Unit id="1" country="Germany">
-			        <Side name="2Panzer" type="Tank">
-				        <Strength type="Usual">7</Strength>
-				        <Movement>6</Movement>
-			        </Side>
-			        <Side name="2Panzer_h" type="Tank">
-				        <Strength type="Usual">5</Strength>
-				        <Movement>6</Movement>
-			        </Side>
-		        </Unit>
-		    </Units>""">
-
 module UnitData =
-    let data =
-        UnitData.Load("avares://NoRetreat/Assets/UnitCounters.xml" |> Stream.create)
+    type T = XmlProvider<"""
+        <Units>
+			<Unit id="6" country="Germany">
+				<Side name="1Panzer" type="Tank">
+					<Strength type="Usual">7</Strength>
+					<Movement>6</Movement>
+				</Side>
+				<Side name="1Panzer_h" type="Tank">
+					<Strength type="Usual">5</Strength>
+					<Movement>6</Movement>
+				</Side>
+			</Unit>
+		    <Unit id="1" country="Germany">
+			    <Side name="2Panzer" type="Tank">
+				    <Strength type="Usual">7</Strength>
+				    <Movement>6</Movement>
+			    </Side>
+			    <Side name="2Panzer_h" type="Tank">
+				    <Strength type="Usual">5</Strength>
+				    <Movement>6</Movement>
+			    </Side>
+		    </Unit>
+		</Units>""">
 
-    let createSide (side: UnitData.Side) =
+    let data =
+        T.Load("avares://NoRetreat/Assets/UnitCounters.xml" |> Stream.create)
+
+    let createSide (side: T.Side) =
         { Name = side.Name
           Type = UnitType.fromString side.Type
           Attack =
