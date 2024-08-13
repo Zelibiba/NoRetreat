@@ -22,6 +22,7 @@ namespace HexGameControls
         private Matrix _matrix;
         private Point _origin;
         private Point _start;
+        private bool _isDragged = false;
 
         private void SetTransformMatrix(Control control)
         {
@@ -115,6 +116,7 @@ namespace HexGameControls
 
             _origin = new(_matrix.M31, _matrix.M32);
             _start = e.GetPosition(this);
+            _isDragged = true;
 
             Cursor = new(StandardCursorType.Hand);
             e.Handled = true;
@@ -124,12 +126,13 @@ namespace HexGameControls
         {
             var properties = e.GetCurrentPoint(this).Properties;
             if (!properties.IsMiddleButtonPressed) return;
+            if (!_isDragged) return;
             if (Child == null) return;
 
             var scaleX = _matrix.M11;
             var scaleY = _matrix.M22;
 
-            var vector = e.GetPosition(this) - _start;
+            var vector = e.GetPosition(this) - (Point)_start;
             var offsetX = _origin.X + vector.X;
             var offsetY = _origin.Y + vector.Y;
             (offsetX, offsetY) = CheckConstrains(Child, offsetX, offsetY, scaleX, scaleY);
@@ -143,6 +146,7 @@ namespace HexGameControls
         {
             if (Child == null) return;
 
+            _isDragged = false;
             Cursor = Cursor.Default;
             e.Handled = true;
         }

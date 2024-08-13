@@ -137,10 +137,9 @@ module EventExtentions =
                 )
 
 module EventLib =
-    let handled<'arg when 'arg :> RoutedEventArgs> (observable: IObservable<'arg>) =
-        Observable.map (fun (e: 'arg) -> 
-            e.Handled <- true
-            e) observable
+    let handled<'arg when 'arg :> RoutedEventArgs> (args: 'arg) =
+        args.Handled <- true
+        args
 
     let getProperties (e: PointerEventArgs) =
         e.GetCurrentPoint(e.Source :?> Avalonia.Visual).Properties

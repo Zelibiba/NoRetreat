@@ -1,8 +1,7 @@
 ﻿namespace NoRetreat
 
-
 [<Struct>]
-type Coordinates =
+type Coordinate =
     { R: int
       C: int }
 
@@ -16,7 +15,7 @@ type Coordinates =
         { R = row1 - row2
           C = column1 - column2 }
 
-module Coordinates =
+module Coordinate =
 
     let create (row, column) = { R = row; C = column }
 
@@ -26,13 +25,11 @@ module Coordinates =
         |> function
             | [| (true, r); (true, c) |] -> create (r, c)
             | _ -> failwithf "Can't parse to Coordinates: %s" str
-        
-            
 
     let private adjacentCoordsPattern =
         [ (1, -1); (0, -1); (1, 0); (-1, 1); (0, 1); (-1, 0) ]
         |> List.map create
         |> List.toSeq
 
-    let adjacentCoords coords =
-        Seq.map ((+) coords) adjacentCoordsPattern
+    let adjacentCoords coord =
+        Seq.map ((+) coord) adjacentCoordsPattern

@@ -23,9 +23,11 @@ type MainWindow() as this =
         base.AttachDevTools()
         #endif
 
+        TopLevel.GetTopLevel(this).RendererDiagnostics.DebugOverlays <- Avalonia.Rendering.RendererDebugOverlays.Fps
+
         Elmish.Program.mkSimple Field.init Field.update Field.view
         |> Program.withHost this
-        |> Program.withConsoleTrace
+        //|> Program.withConsoleTrace
         |> Program.run
 
 

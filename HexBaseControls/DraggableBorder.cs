@@ -16,16 +16,16 @@ namespace HexGameControls
 {
     public class DraggingStartetEventArgs : RoutedEventArgs
     {
-        public DraggingStartetEventArgs(PointerEventArgs e) : base(DraggableControl.DraggingStartedEvent)
+        public DraggingStartetEventArgs(PointerEventArgs e) : base(DraggableBorder.DraggingStartedEvent)
         {
             PointerArgs = e;
         }
 
         public PointerEventArgs PointerArgs { get; }
     }
-    public class DraggableControl : Border
+    public class DraggableBorder : Border
     {
-        public DraggableControl()
+        public DraggableBorder()
         {
             AttachedToVisualTree += OnAttachedToVisualTree;
             DetachedFromVisualTree += OnDetachedFromVisualTree;
@@ -47,7 +47,7 @@ namespace HexGameControls
 
         #region DraggingStartedEvent
         public static readonly RoutedEvent<DraggingStartetEventArgs> DraggingStartedEvent =
-            RoutedEvent.Register<DraggableControl, DraggingStartetEventArgs>(nameof(DraggingStarted), RoutingStrategies.Bubble);
+            RoutedEvent.Register<DraggableBorder, DraggingStartetEventArgs>(nameof(DraggingStarted), RoutingStrategies.Bubble);
 
         public event EventHandler<DraggingStartetEventArgs> DraggingStarted
         {
@@ -82,10 +82,11 @@ namespace HexGameControls
 
         private void OnPointerMoved(object? sender, PointerEventArgs e)
         {
-            var properties = e.GetCurrentPoint(sender as Visual).Properties;
+            if (sender is not Visual visual) return;
+            var properties = e.GetCurrentPoint(visual).Properties;
             if (!properties.IsLeftButtonPressed) return;
 
-            var vector = e.GetPosition(sender as Visual) - _startPoint;
+            var vector = e.GetPosition(visual) - _startPoint;
             double distance = Math.Pow(vector.X, 2) + Math.Pow(vector.Y, 2);
             distance = Math.Sqrt(distance);
             if (distance < Sensitivity) return;

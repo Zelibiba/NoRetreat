@@ -34,12 +34,16 @@ module HexItem =
             AttrBuilder<'t>.CreateProperty<float>(HexItem.BackGroundOpacityProperty, value, ValueNone)
 
 [<AutoOpen>]
-module DraggableControl =
-    let create (attrs: IAttr<DraggableControl> list) = ViewBuilder.Create<DraggableControl>(attrs)
+module DraggableBorder =
+    let create (attrs: IAttr<DraggableBorder> list) = ViewBuilder.Create<DraggableBorder>(attrs)
 
-    type DraggableControl with
-        static member sensitivity<'t when 't :> DraggableControl>(value: float) : IAttr<'t> =
-            AttrBuilder<'t>.CreateProperty<float>(DraggableControl.SensitivityProperty, value, ValueNone)
+    type DraggableBorder with
+        static member sensitivity<'t when 't :> DraggableBorder>(value: float) : IAttr<'t> =
+            AttrBuilder<'t>.CreateProperty<float>(DraggableBorder.SensitivityProperty, value, ValueNone)
 
-        static member onDraggingStarted<'t when 't :> DraggableControl>(func: DraggingStartetEventArgs -> unit, ?subPatchOptions) =
-            AttrBuilder<'t>.CreateSubscription<DraggingStartetEventArgs>(DraggableControl.DraggingStartedEvent, func, ?subPatchOptions = subPatchOptions)
+        static member onDraggingStarted<'t when 't :> DraggableBorder>(func: DraggingStartetEventArgs -> unit, ?subPatchOptions) =
+            AttrBuilder<'t>.CreateSubscription<DraggingStartetEventArgs>(DraggableBorder.DraggingStartedEvent, func, ?subPatchOptions = subPatchOptions)
+
+[<AutoOpen>]
+module MovableBorder =
+    let create (attrs: IAttr<MovableBorder> list) = ViewBuilder.Create<MovableBorder>(attrs)

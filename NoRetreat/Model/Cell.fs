@@ -21,10 +21,6 @@ type Tower =
         with get index = this.Counters[index]
         and set index value = this.Counters[index] <- value
 
-    member this.Update() =
-        { this with
-            UpdateField = not this.UpdateField }
-
 module Tower =
 
     let create counters =
@@ -35,7 +31,7 @@ module Tower =
 
     let none = create [||]
 
-    let update (tower: Tower) = tower.Update()
+    let get (tower: Tower) idx = tower[idx]
 
     let setIsExpanded isExpanded tower = { tower with IsExpanded = isExpanded }
 
@@ -75,7 +71,12 @@ module Tower =
     let removeCounters idxs (tower: Tower) =
         let removed = Array.map tower.get_Item idxs
         let counters' = Array.except removed tower.Counters
-        let tower' = if counters'.Length <= 1 then setIsExpanded false tower else tower
+
+        let tower' =
+            if counters'.Length <= 1 then
+                setIsExpanded false tower
+            else
+                tower
 
         { tower' with
             Counters = counters'
@@ -83,10 +84,11 @@ module Tower =
         removed
 
     let addCounters targetIdx newCounters (tower: Tower) =
-        let counters' = 
+        let counters' =
             match targetIdx with
             | Some idx -> Array.insertManyAt (idx + 1) newCounters tower.Counters
-            | None -> newCounters
+            | None -> Array.append tower.Counters newCounters
+
         { tower with Counters = counters' }
 
 [<Struct>]
@@ -122,18 +124,36 @@ type Sea =
         | "Caspian" -> Caspian
         | _ -> failwithf "Can't parse to Sea: %s" str
 
+[<Struct>]
+type ZOC =
+    | NoZOC
+    | One of Country
+    | Both
+
+    static member add (zoc: ZOC) (owner: Country option) =
+        match zoc, owner with
+        | _, None -> zoc
+        | NoZOC, Some country -> One country
+        | One country1, Some country2 when country1 = country2 -> zoc
+        | _, Some _ -> Both
+
+
 type Cell =
-    { CanBeSelected: bool
-      Coords: Coordinates
+    { Coord: Coordinate
       Terrain: Terrain
-      Rivers: Coordinates array
+      Rivers: Coordinate array
       Sea: Sea option
-      BlockedSides: Coordinates array
+      BlockedSides: Coordinate array
+
+      CanBeSelected: bool
+      Owner: Country option
+      ZOC: ZOC
       Tower: Tower }
 
 module HexData =
     type T =
-        XmlProvider<Schema="""
+        XmlProvider<
+            Schema="""
         <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
           <xs:element name="Hexes">
             <xs:complexType>
@@ -160,34 +180,49 @@ module HexData =
               </xs:sequence>
             </xs:complexType>
           </xs:element>
-        </xs:schema>""">
+        </xs:schema>"""
+         >
 
     let createfromHex row (hex: T.Hex) =
         let edge = Option.map Country.fromString hex.MapEdge
-        let coords = Coordinates.create (row, hex.Column)
-        {
-        CanBeSelected = false
-        Coords = coords
-        Terrain = Terrain.fromString hex.Type
-        Rivers = Array.map (Coordinates.fromString >> ((+) coords)) hex.Rivers
-        Sea = Option.map Sea.fromString hex.Sea
-        BlockedSides = Array.map (Coordinates.fromString >> ((+) coords)) hex.Blockeds
-        Tower = Tower.none
-        }
+        let coord = Coordinate.create (row, hex.Column)
 
-    let hexes = 
+        { Coord = coord
+          Terrain = Terrain.fromString hex.Type
+          Rivers = Array.map (Coordinate.fromString >> ((+) coord)) hex.Rivers
+          Sea = Option.map Sea.fromString hex.Sea
+          BlockedSides = Array.map (Coordinate.fromString >> ((+) coord)) hex.Blockeds
+
+          CanBeSelected = false
+          Owner = None
+          ZOC = NoZOC
+          Tower = Tower.none }
+
+    let hexes =
         T.Load("avares://NoRetreat/Assets/Hexes.xml" |> Stream.create).Rows
-        |> Array.map (fun row -> Array.map (createfromHex row.Value >> (fun hex -> (hex.Coords, hex))) row.Hexs)
-        |> Array.concat
+        |> Array.collect (fun row -> Array.map (createfromHex row.Value >> (fun hex -> (hex.Coord, hex))) row.Hexs)
         |> dict
 
-    let createFromCoords coords = hexes[coords]
+    let createFromCoords coord = hexes[coord]
 
 module Cell =
     module Helpers =
         let setTower (cell: Cell) tower = { cell with Tower = tower }
 
-    let init = HexData.createFromCoords
+        let setTowerWithOwnerCheck (cell: Cell) tower =
+            let owner =
+                Array.tryPick
+                    (fun counter ->
+                        let (Unit unit) = counter.Counter
+                        Some unit.Country)
+                    tower.Counters
+
+            { cell with
+                Tower = tower
+                Owner = owner }
+
+        let unblockedDirections (cell: Cell) =
+            Coordinate.adjacentCoords cell.Coord |> Seq.except cell.BlockedSides
 
     type Msg =
         | CounterMsg of int * Counter.Msg
@@ -196,6 +231,7 @@ module Cell =
         | DeselectCounters
         | RemoveCounters of int array
         | AddCounters of int option * Counter array
+        | SetZOC of ZOC
 
     type ExtraData =
         | SelectedIdxs of int array
@@ -230,7 +266,7 @@ module Cell =
         | RemoveCounters idxs ->
             state.Tower
             |> Tower.removeCounters idxs
-            |> Tuple.map (Helpers.setTower state) RemovedCounters
+            |> Tuple.map (Helpers.setTowerWithOwnerCheck state) RemovedCounters
         | AddCounters(idxOpt, counters) ->
             state.Tower
             |> Tower.addCounters idxOpt counters
@@ -239,52 +275,54 @@ module Cell =
                else
                    Tower.selectAllCounters
             |> Tower.defineSelection
-            |> Tuple.map (Helpers.setTower state) SelectedIdxs
+            |> Tuple.map (Helpers.setTowerWithOwnerCheck state) SelectedIdxs
+        | SetZOC zoc -> { state with ZOC = zoc }, NoData
 
+
+    let towerView (state: Tower) (dispatch: Msg -> unit) : IView =
+        let dispatchCounter = Library.dispatchwithIndex dispatch CounterMsg
+
+        TowerPanel.create
+            [ //TowerPanel.height Counter.Size
+              //TowerPanel.width Counter.Size
+              TowerPanel.horizontalAlignment HorizontalAlignment.Center
+              TowerPanel.verticalAlignment VerticalAlignment.Center
+              if state.IsExpanded then
+                  TowerPanel.deltaPadding (17.5, -38.5)
+              else
+                  TowerPanel.deltaPadding (5, -11)
+              TowerPanel.onDoubleTapped (fun _ -> dispatch ChangeTowerExpanded)
+              TowerPanel.children (
+                  state.Counters
+                  |> Array.mapi (fun idx counter -> Counter.view counter (dispatchCounter idx))
+                  |> Array.toList
+              ) ]
 
     let diagonal = 92.2
 
-    let computeX coords =
-        1.73205080756 * diagonal * (float coords.C + (float coords.R) / 2.) + 2113.
+    let computeX coord =
+        1.73205080756 * diagonal * (float coord.C + (float coord.R) / 2.) + 2113.
 
-    let computeY coords = 1.5 * diagonal * (float coords.R) + 1601.
+    let computeY coord =
+        1.5 * diagonal * (float coord.R) + 1601.
 
     let view (state: Cell) (dispatch: Msg -> unit) : IView =
-        let dispatchCounter = Library.dispatchwithIndex dispatch CounterMsg
-
         HexItem.create
             [ HexItem.radius diagonal
-              HexItem.left (computeX state.Coords)
-              HexItem.top (computeY state.Coords)
-              HexItem.background "transparent"
+              HexItem.left (computeX state.Coord)
+              HexItem.top (computeY state.Coord)
+              HexItem.background ("transparent")
               //HexItem.backgroundOpacity 0.5
               //HexItem.borderThickness 3
-              HexItem.borderBrush "red"
+              //HexItem.borderBrush "red"
               HexItem.clipToBounds false
               if state.Tower.IsSelected then
                   HexItem.zIndex 1
 
-              if state.Tower.Counters.Length = 0 then
-                  DragDrop.allowDrop true
-                  DragDrop.onDrop (fun e ->
-                      if e.Data.Contains(DataFormats.Counters) then dispatch Dropped)
-              else
-                  HexItem.content (
-                      TowerPanel.create
-                          [ TowerPanel.background "Pink"
-                            //TowerPanel.height Counter.Size
-                            //TowerPanel.width Counter.Size
-                            TowerPanel.horizontalAlignment HorizontalAlignment.Center
-                            TowerPanel.verticalAlignment VerticalAlignment.Center
-                            if state.Tower.IsExpanded then
-                                TowerPanel.deltaPadding (17.5, -38.5)
-                            else
-                                TowerPanel.deltaPadding (5, -11)
-                            TowerPanel.onDoubleTapped (fun _ -> dispatch ChangeTowerExpanded)
-                            TowerPanel.children (
-                                state.Tower.Counters
-                                |> Array.mapi (fun idx counter -> Counter.view counter (dispatchCounter idx))
-                                |> Array.toList
-                            ) ]
-                  )
-            ]
+              DragDrop.allowDrop true
+              //DragDrop.onDragEnter ((fun _ -> System.Diagnostics.Trace.WriteLine(state.Coord)), SubPatchOptions.OnChangeOf state.Coord)
+              DragDrop.onDrop (fun e ->
+                  if e.Data.Contains(DataFormats.Counters) then
+                      dispatch Dropped)
+
+              HexItem.content (towerView state.Tower dispatch) ]

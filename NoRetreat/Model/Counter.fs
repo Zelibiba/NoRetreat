@@ -110,7 +110,7 @@ module UnitData =
 		</Units>""">
 
     let data =
-        T.Load("avares://NoRetreat/Assets/UnitCounters.xml" |> Stream.create)
+        T.Load("avares://NoRetreat/Assets/UnitCounters.xml" |> Stream.create).Units
 
     let createSide (side: T.Side) =
         { Name = side.Name
@@ -120,27 +120,23 @@ module UnitData =
               Type = AttackType.fromString side.Strength.Type }
           Movement = side.Movement }
 
+    let createCounter id =
+        let unit = Array.find (fun (un: T.Unit) -> un.Id = id) data
+        {
+        Country = Country.fromString unit.Country
+        CurrentSide = createSide unit.Sides[0] |> FullSide
+        OtherSide = createSide unit.Sides[1] |> HalfSide
+        }
+
 module Counter =
     open UnitCounter
-    open UnitData
 
     let rand = System.Random()
 
-    let init () =
-        let idx = rand.Next(0, data.Units.Length)
-        let unit = data.Units[idx]
-
-        let country = Country.fromString unit.Country
-        let fullSide = createSide unit.Sides[0] |> FullSide
-        let halfSide = createSide unit.Sides[1] |> HalfSide
-
+    let init id =
         { IsSelected = false
           IsSideSwapped = false
-          Counter =
-            Unit
-                { Country = country
-                  CurrentSide = fullSide
-                  OtherSide = halfSide } }
+          Counter = UnitData.createCounter id |> Unit }
 
     type Msg =
         | ChangeSelection of add: bool
@@ -221,38 +217,36 @@ module Counter =
         sprintf "avares://NoRetreat/Assets/Units/%A/%s.PNG" country unitInfo.Name
         |> Bitmap.create
 
-    let Size = 70
+    let Size = 100
 
     let view (state: Counter) (dispatch: Msg -> unit) : IView =
         let (Unit unit) = state.Counter
 
-        DraggableControl.create
-            [ DraggableControl.height Size
-              DraggableControl.width Size
+        DraggableBorder.create
+            [ DraggableBorder.height Size
+              DraggableBorder.width Size
               if state.IsSelected then
                   match unit.Country with
                   | USSR -> "Green"
                   | Germany -> "Red"
-                  |> DraggableControl.borderBrush
+                  |> DraggableBorder.borderBrush
 
-                  DraggableControl.borderThickness 3
+                  DraggableBorder.borderThickness 3
               else
-                  DraggableControl.borderBrush "Black"
-                  DraggableControl.borderThickness 1
+                  DraggableBorder.borderBrush "Black"
+                  DraggableBorder.borderThickness 1
               if state.IsSelected then
                   if state.IsSideSwapped then
-                      DraggableControl.zIndex 2
+                      DraggableBorder.zIndex 2
                   else
-                      DraggableControl.zIndex 1
-              DraggableControl.cornerRadius 10
-              DraggableControl.boxShadow (BoxShadow.Parse("-3 4 0 0 #515151"))
+                      DraggableBorder.zIndex 1
+              DraggableBorder.cornerRadius 15
+              //DraggableBorder.boxShadow (BoxShadow.Parse("-3 4 0 0 #515151"))
 
               if state.IsSideSwapped then
-                  DraggableControl.onPointerReleased (fun e ->
-                      e.Handled <- true
-                      Flip true |> dispatch)
+                  DraggableBorder.onPointerReleased (EventLib.handled >> fun _ -> Flip true |> dispatch)
               else
-                  DraggableControl.onPointerPressedExt2 (
+                  DraggableBorder.onPointerPressedExt2 (
                       splitByLeftButton,
                       (fun e ->
                           if e.KeyModifiers.HasFlag(KeyModifiers.Control) then
@@ -264,14 +258,14 @@ module Counter =
                   )
 
                   if state.IsSelected then
-                      DraggableControl.sensitivity 20
-                      DraggableControl.onDraggingStarted (_.PointerArgs >> BeginDrag >> dispatch)
+                      DraggableBorder.sensitivity 20
+                      DraggableBorder.onDraggingStarted (_.PointerArgs >> BeginDrag >> dispatch)
                   else
                       DragDrop.allowDrop true
-                      DragDrop.onDrop (fun e ->
+                      DragDrop.onDrop (EventLib.handled >> fun e ->
                           if e.Data.Contains(DataFormats.Counters) then dispatch Dropped)
 
-              DraggableControl.child (
+              DraggableBorder.child (
                   match unit.CurrentSide with
                   | FullSide unitInfo
                   | HalfSide unitInfo -> Image.create [ Image.source (loadImage unit.Country unitInfo) ] |> generalize
