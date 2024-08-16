@@ -39,9 +39,10 @@ namespace HexGameControls
 
         private void Canvas_DragOver(object? sender, DragEventArgs e)
         {
+            if (_canvas == null) return;
             var point = e.GetPosition(_canvas);
-            Canvas.SetLeft(this, point.X + 20);
-            Canvas.SetTop(this, point.Y + 20);
+            Canvas.SetLeft(this, point.X + 40);
+            Canvas.SetTop(this, point.Y + 40);
         }
     }
 }

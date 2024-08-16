@@ -13,8 +13,8 @@
     <Content Include="Assets\Hexes.xml" />
     <Content Include="Assets\avalonia-logo.ico" />
     <Content Include="Assets\UnitCounters.xml" />
-    <Compile Include="Library.fs" />
     <Compile Include="Extentions.fs" />
+    <Compile Include="Library.fs" />
     <Compile Include="EventExtention.fs" />
     <Compile Include="Controls.fs" />
     <Compile Include="Model\Types.fs" />

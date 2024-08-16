@@ -12,8 +12,7 @@ open NoRetreat.Controls
 open HexGameControls
 
 type Tower =
-    { UpdateField: bool
-      Counters: Counter array
+    { Counters: Counter array
       IsExpanded: bool
       IsSelected: bool }
 
@@ -21,11 +20,13 @@ type Tower =
         with get index = this.Counters[index]
         and set index value = this.Counters[index] <- value
 
+    member this.Owner =
+        Array.tryPick (_.Counter >> CounterInfo.unbox >> _.Country >> Some) this.Counters
+
 module Tower =
 
     let create counters =
-        { UpdateField = false
-          Counters = counters
+        { Counters = counters
           IsExpanded = false
           IsSelected = false }
 
@@ -39,7 +40,8 @@ module Tower =
         tower[idx] <- Counter.update msg tower[idx]
         tower
 
-    let updateCounterAt tower msg idx = updateCounter msg idx tower |> ignore
+    let updateCounterAt (tower: Tower) msg idx = 
+        tower[idx] <- Counter.update msg tower[idx]
 
     let deselectCounters (tower: Tower) =
         tower.Counters
@@ -91,6 +93,32 @@ module Tower =
 
         { tower with Counters = counters' }
 
+    let liftCounterUp counterIdxs (tower: Tower) =
+        Array.sortDescending counterIdxs
+        |> fun array ->
+            if array[0] = tower.Counters.Length - 1
+            then array[1..]
+            else array
+        |> Array.iter (fun idx ->
+            let counter = tower[idx]
+            tower[idx] <- tower[idx+1]
+            tower[idx+1] <- counter)
+
+        tower
+
+    let liftCounterDown counterIdxs (tower: Tower) =
+        Array.sort counterIdxs
+        |> fun array -> 
+            if array[0] = 0
+            then array[1..]
+            else array
+        |> Array.iter (fun idx ->
+            let counter = tower[idx]
+            tower[idx] <- tower[idx-1]
+            tower[idx-1] <- counter)
+
+        tower
+
 [<Struct>]
 type Terrain =
     | Open
@@ -126,17 +154,35 @@ type Sea =
 
 [<Struct>]
 type ZOC =
-    | NoZOC
-    | One of Country
-    | Both
+    {
+    SumUSSR: int
+    SumGermany: int
+    }
 
-    static member add (zoc: ZOC) (owner: Country option) =
-        match zoc, owner with
-        | _, None -> zoc
-        | NoZOC, Some country -> One country
-        | One country1, Some country2 when country1 = country2 -> zoc
-        | _, Some _ -> Both
+module ZOC =
+    let empty = { SumGermany = 0; SumUSSR = 0 }
+    let isEZOC country (zoc: ZOC) =
+        match country with
+        | USSR -> zoc.SumGermany > 0
+        | Germany -> zoc.SumUSSR > 0
 
+    let add country (zoc: ZOC) =
+        match country with
+        | USSR -> { zoc with SumUSSR = zoc.SumUSSR + 1 }
+        | Germany -> { zoc with SumGermany = zoc.SumGermany + 1 }
+
+    let sub country (zoc: ZOC) =
+        match country with
+        | USSR -> { zoc with SumUSSR = zoc.SumUSSR - 1 }
+        | Germany -> { zoc with SumGermany = zoc.SumGermany - 1 }
+
+    let toTuple (zoc: ZOC) = zoc.SumUSSR, zoc.SumGermany
+
+[<Struct>]
+type Selection =
+    | NotSelected
+    | CanMoveTo
+    | MovedFrom
 
 type Cell =
     { Coord: Coordinate
@@ -144,11 +190,10 @@ type Cell =
       Rivers: Coordinate array
       Sea: Sea option
       BlockedSides: Coordinate array
-
-      CanBeSelected: bool
-      Owner: Country option
+      
+      Tower: Tower
       ZOC: ZOC
-      Tower: Tower }
+      Selection: Selection }
 
 module HexData =
     type T =
@@ -193,10 +238,9 @@ module HexData =
           Sea = Option.map Sea.fromString hex.Sea
           BlockedSides = Array.map (Coordinate.fromString >> ((+) coord)) hex.Blockeds
 
-          CanBeSelected = false
-          Owner = None
-          ZOC = NoZOC
-          Tower = Tower.none }
+          Tower = Tower.none
+          ZOC = ZOC.empty
+          Selection = NotSelected }
 
     let hexes =
         T.Load("avares://NoRetreat/Assets/Hexes.xml" |> Stream.create).Rows
@@ -209,29 +253,22 @@ module Cell =
     module Helpers =
         let setTower (cell: Cell) tower = { cell with Tower = tower }
 
-        let setTowerWithOwnerCheck (cell: Cell) tower =
-            let owner =
-                Array.tryPick
-                    (fun counter ->
-                        let (Unit unit) = counter.Counter
-                        Some unit.Country)
-                    tower.Counters
-
-            { cell with
-                Tower = tower
-                Owner = owner }
-
         let unblockedDirections (cell: Cell) =
             Coordinate.adjacentCoords cell.Coord |> Seq.except cell.BlockedSides
 
     type Msg =
         | CounterMsg of int * Counter.Msg
         | ChangeTowerExpanded
+        | DragEntered
         | Dropped
         | DeselectCounters
         | RemoveCounters of int array
         | AddCounters of int option * Counter array
-        | SetZOC of ZOC
+        | LiftCounterUp of int array
+        | LiftCounterDown of int array
+        | AddZOC of Country
+        | SubZOC of Country
+        | SetSelection of Selection
 
     type ExtraData =
         | SelectedIdxs of int array
@@ -259,24 +296,34 @@ module Cell =
             state.Tower
             |> Tower.deselectCounters
             |> Tower.setIsExpanded (not state.Tower.IsExpanded)
-            |> Helpers.setTower state,
-            NoData
+            |> Helpers.setTower state, NoData
+        | DragEntered
         | Dropped -> state, NoData
         | DeselectCounters -> state.Tower |> Tower.deselectCounters |> Helpers.setTower state, NoData
         | RemoveCounters idxs ->
             state.Tower
             |> Tower.removeCounters idxs
-            |> Tuple.map (Helpers.setTowerWithOwnerCheck state) RemovedCounters
+            |> Tuple.map (Helpers.setTower state) RemovedCounters
         | AddCounters(idxOpt, counters) ->
             state.Tower
             |> Tower.addCounters idxOpt counters
-            |> if state.Tower.IsExpanded then
-                   id
-               else
-                   Tower.selectAllCounters
+            |> if state.Tower.IsExpanded
+               then id
+               else Tower.selectAllCounters
             |> Tower.defineSelection
-            |> Tuple.map (Helpers.setTowerWithOwnerCheck state) SelectedIdxs
-        | SetZOC zoc -> { state with ZOC = zoc }, NoData
+            |> Tuple.map (Helpers.setTower state) SelectedIdxs
+        | LiftCounterUp idxs ->
+            Tower.liftCounterUp idxs state.Tower
+            |> Tower.defineSelection
+            |> Tuple.map (Helpers.setTower state) SelectedIdxs
+        | LiftCounterDown idxs ->
+            Tower.liftCounterDown idxs state.Tower
+            |> Tower.defineSelection
+            |> Tuple.map (Helpers.setTower state) SelectedIdxs
+        | AddZOC country -> {state with ZOC = ZOC.add country state.ZOC}, NoData
+        | SubZOC country -> {state with ZOC = ZOC.sub country state.ZOC}, NoData
+        | SetSelection selection -> {state with Selection = selection}, NoData
+            
 
 
     let towerView (state: Tower) (dispatch: Msg -> unit) : IView =
@@ -307,22 +354,29 @@ module Cell =
         1.5 * diagonal * (float coord.R) + 1601.
 
     let view (state: Cell) (dispatch: Msg -> unit) : IView =
+        let checkDragDropArgs onSuccess (args: DragEventArgs) =
+            if args.Data.Contains(DataFormats.Counters) then onSuccess args
+
         HexItem.create
             [ HexItem.radius diagonal
               HexItem.left (computeX state.Coord)
               HexItem.top (computeY state.Coord)
-              HexItem.background ("transparent")
-              //HexItem.backgroundOpacity 0.5
-              //HexItem.borderThickness 3
+              HexItem.backgroundOpacity 0.5
+              HexItem.background (
+                  match state.Selection with
+                  | NotSelected -> "transparent"
+                  | CanMoveTo -> "green"
+                  | MovedFrom -> "red"
+              )
+              //HexItem.borderThickness 1
               //HexItem.borderBrush "red"
               HexItem.clipToBounds false
               if state.Tower.IsSelected then
                   HexItem.zIndex 1
 
               DragDrop.allowDrop true
-              //DragDrop.onDragEnter ((fun _ -> System.Diagnostics.Trace.WriteLine(state.Coord)), SubPatchOptions.OnChangeOf state.Coord)
-              DragDrop.onDrop (fun e ->
-                  if e.Data.Contains(DataFormats.Counters) then
-                      dispatch Dropped)
+              DragDrop.onDragEnter (checkDragDropArgs (fun _ -> dispatch DragEntered))
+              DragDrop.onDrop (checkDragDropArgs (fun _ -> dispatch Dropped))
 
-              HexItem.content (towerView state.Tower dispatch) ]
+              HexItem.content (towerView state.Tower dispatch)
+            ]

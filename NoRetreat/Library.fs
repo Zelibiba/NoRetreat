@@ -1,5 +1,7 @@
 ﻿namespace NoRetreat
 
+open System.Collections.Generic
+
 module Library =
 
     let inline dispatchwithIndex (dispatch: 'msg -> unit) wrapMsg index =
@@ -20,3 +22,14 @@ module Library =
 
 module Tuple =
     let inline map f1 f2 (item1, item2) = (f1 item1, f2 item2)
+
+module Lib =
+    let memoize f =
+      let cache = Dictionary()
+      fun x ->
+        match cache.TryGetValue(x) with
+        | true, v -> v
+        | _ -> 
+          let v = f x
+          cache.Add(x, v)
+          v

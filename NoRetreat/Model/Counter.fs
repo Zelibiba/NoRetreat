@@ -73,6 +73,9 @@ type UnitCounter =
 
 type CounterInfo = Unit of UnitCounter
 
+module CounterInfo =
+    let unbox (Unit unit) = unit
+
 type Counter =
     { IsSelected: bool
       IsSideSwapped: bool
@@ -112,6 +115,8 @@ module UnitData =
     let data =
         T.Load("avares://NoRetreat/Assets/UnitCounters.xml" |> Stream.create).Units
 
+    
+
     let createSide (side: T.Side) =
         { Name = side.Name
           Type = UnitType.fromString side.Type
@@ -131,8 +136,6 @@ module UnitData =
 module Counter =
     open UnitCounter
 
-    let rand = System.Random()
-
     let init id =
         { IsSelected = false
           IsSideSwapped = false
@@ -142,7 +145,6 @@ module Counter =
         | ChangeSelection of add: bool
         | Flip of back: bool
         | BeginDrag of PointerEventArgs
-        | Dropped
 
     let update (msg: Msg) (state: Counter) =
         match msg with
@@ -155,8 +157,7 @@ module Counter =
             { state with
                 Counter = swapSides unitCounter |> Unit
                 IsSideSwapped = not back }
-        | BeginDrag _
-        | Dropped -> state
+        | BeginDrag _ -> state
 
     //let iconView unitType : IView =
     //    let height = 20.
@@ -213,7 +214,7 @@ module Counter =
     //        ]
     //    ]
 
-    let private loadImage country unitInfo =
+    let private loadImage = Lib.memoize <| fun (country: Country, unitInfo) ->
         sprintf "avares://NoRetreat/Assets/Units/%A/%s.PNG" country unitInfo.Name
         |> Bitmap.create
 
@@ -256,17 +257,13 @@ module Counter =
                       (fun _ -> Flip false |> dispatch),
                       SubPatchOptions.OnChangeOf state.IsSelected
                   )
-
+                  
                   if state.IsSelected then
                       DraggableBorder.sensitivity 20
                       DraggableBorder.onDraggingStarted (_.PointerArgs >> BeginDrag >> dispatch)
-                  else
-                      DragDrop.allowDrop true
-                      DragDrop.onDrop (EventLib.handled >> fun e ->
-                          if e.Data.Contains(DataFormats.Counters) then dispatch Dropped)
 
               DraggableBorder.child (
                   match unit.CurrentSide with
                   | FullSide unitInfo
-                  | HalfSide unitInfo -> Image.create [ Image.source (loadImage unit.Country unitInfo) ] |> generalize
+                  | HalfSide unitInfo -> Image.create [ Image.source (loadImage (unit.Country, unitInfo)) ] |> generalize
               ) ]
