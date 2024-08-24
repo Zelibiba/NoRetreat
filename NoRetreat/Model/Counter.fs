@@ -25,7 +25,14 @@ type UnitType =
     | SSMechanized
     | SSTank
 
-    static member fromString(str) =
+    member x.isTank =
+        match x with
+        | Tank
+        | SSTank -> true
+        | _ -> false
+
+module UnitType =
+    let fromString str =
         match str with
         | "Infantry" -> Infantry
         | "Regional" -> Regional
@@ -36,6 +43,8 @@ type UnitType =
         | "SSMechanized" -> SSMechanized
         | "SSTank" -> SSTank
         | _ -> failwithf "Can't parse to UnitType: %s" str
+
+    let isTank (unitType: UnitType) = unitType.isTank
 
 [<Struct>]
 type AttackType =
@@ -54,7 +63,7 @@ type AttackType =
 type AttackInfo = { Strength: int; Type: AttackType }
 
 [<Struct>]
-type UnitInfo =
+type SideInfo =
     { Name: string
       Type: UnitType
       Attack: AttackInfo
@@ -62,24 +71,31 @@ type UnitInfo =
 
 [<Struct>]
 type CounterSide =
-    | FullSide of fullSide: UnitInfo
-    | HalfSide of halfSide: UnitInfo
+    | FullSide of fullSide: SideInfo
+    | HalfSide of halfSide: SideInfo
+
+    static member unbox counterSide =
+        match counterSide with
+        | FullSide side
+        | HalfSide side -> side
+
+[<Struct>]
+type Movement = { Current: int; Remained: int }
+
+module Movement =
+    let create movementPoints =
+        { Current = movementPoints
+          Remained = movementPoints }
 
 [<Struct>]
 type UnitCounter =
-    { Country: Country
-      CurrentSide: CounterSide
-      OtherSide: CounterSide }
+    { CurrentSide: CounterSide
+      OtherSide: CounterSide
+      Country: Country
+      MP: Movement }
 
-type CounterInfo = Unit of UnitCounter
-
-module CounterInfo =
-    let unbox (Unit unit) = unit
-
-type Counter =
-    { IsSelected: bool
-      IsSideSwapped: bool
-      Counter: CounterInfo }
+      member private x.unboxedCurrentSide = CounterSide.unbox x.CurrentSide
+      member x.Type =  x.unboxedCurrentSide.Type
 
 module UnitCounter =
     let swapSides unitCounter =
@@ -87,8 +103,24 @@ module UnitCounter =
             CurrentSide = unitCounter.OtherSide
             OtherSide = unitCounter.CurrentSide }
 
+    let payMP cost (unit: UnitCounter) =
+        let payment = cost unit.Type
+        { unit with MP.Remained = unit.MP.Remained - payment }
+
+type CounterInfo = Unit of UnitCounter
+
+module CounterInfo =
+    let unbox (Unit unit) = unit
+    let update f = unbox >> f >> Unit
+
+type Counter =
+    { IsSelected: bool
+      IsSideSwapped: bool
+      Info: CounterInfo }
+
 module UnitData =
-    type T = XmlProvider<"""
+    type T =
+        XmlProvider<"""
         <Units>
 			<Unit id="6" country="Germany">
 				<Side name="1Panzer" type="Tank">
@@ -115,8 +147,6 @@ module UnitData =
     let data =
         T.Load("avares://NoRetreat/Assets/UnitCounters.xml" |> Stream.create).Units
 
-    
-
     let createSide (side: T.Side) =
         { Name = side.Name
           Type = UnitType.fromString side.Type
@@ -127,19 +157,22 @@ module UnitData =
 
     let createCounter id =
         let unit = Array.find (fun (un: T.Unit) -> un.Id = id) data
-        {
-        Country = Country.fromString unit.Country
-        CurrentSide = createSide unit.Sides[0] |> FullSide
-        OtherSide = createSide unit.Sides[1] |> HalfSide
-        }
+        let fullSide = createSide unit.Sides[0]
+
+        { CurrentSide = FullSide fullSide
+          OtherSide = createSide unit.Sides[1] |> HalfSide
+          Country = Country.fromString unit.Country
+          MP = Movement.create fullSide.Movement }
 
 module Counter =
-    open UnitCounter
+    let inline updateInfo f (counter: Counter) =
+        { counter with Info = f counter.Info }
+    let updateUnit = CounterInfo.update >> updateInfo
 
     let init id =
         { IsSelected = false
           IsSideSwapped = false
-          Counter = UnitData.createCounter id |> Unit }
+          Info = UnitData.createCounter id |> Unit }
 
     type Msg =
         | ChangeSelection of add: bool
@@ -152,11 +185,8 @@ module Counter =
             { state with
                 IsSelected = not state.IsSelected }
         | Flip back ->
-            let (Unit unitCounter) = state.Counter
-
-            { state with
-                Counter = swapSides unitCounter |> Unit
-                IsSideSwapped = not back }
+            { state with IsSideSwapped = not back }
+            |> updateUnit UnitCounter.swapSides
         | BeginDrag _ -> state
 
     //let iconView unitType : IView =
@@ -214,14 +244,16 @@ module Counter =
     //        ]
     //    ]
 
-    let private loadImage = Lib.memoize <| fun (country: Country, unitInfo) ->
-        sprintf "avares://NoRetreat/Assets/Units/%A/%s.PNG" country unitInfo.Name
-        |> Bitmap.create
+    let private loadImage =
+        Lib.memoize
+        <| fun (country: Country, unitInfo) ->
+            sprintf "avares://NoRetreat/Assets/Units/%A/%s.PNG" country unitInfo.Name
+            |> Bitmap.create
 
     let Size = 100
 
     let view (state: Counter) (dispatch: Msg -> unit) : IView =
-        let (Unit unit) = state.Counter
+        let (Unit unit) = state.Info
 
         DraggableBorder.create
             [ DraggableBorder.height Size
@@ -257,13 +289,14 @@ module Counter =
                       (fun _ -> Flip false |> dispatch),
                       SubPatchOptions.OnChangeOf state.IsSelected
                   )
-                  
+
                   if state.IsSelected then
                       DraggableBorder.sensitivity 20
-                      DraggableBorder.onDraggingStarted (_.PointerArgs >> BeginDrag >> dispatch)
+                      DraggableBorder.onDraggingStarted (EventLib.handled >> _.PointerArgs >> BeginDrag >> dispatch)
 
               DraggableBorder.child (
                   match unit.CurrentSide with
                   | FullSide unitInfo
-                  | HalfSide unitInfo -> Image.create [ Image.source (loadImage (unit.Country, unitInfo)) ] |> generalize
+                  | HalfSide unitInfo ->
+                      Image.create [ Image.source (loadImage (unit.Country, unitInfo)) ] |> generalize
               ) ]

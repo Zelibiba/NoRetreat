@@ -36,12 +36,14 @@ namespace HexGameControls
         {
             PointerPressed += OnPointerPressed;
             PointerMoved += OnPointerMoved;
+            PointerExited += OnPointerExited;
         }
 
         private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
         {
             PointerPressed -= OnPointerPressed;
             PointerMoved -= OnPointerMoved;
+            PointerExited -= OnPointerExited;
         }
         #endregion
 
@@ -72,7 +74,7 @@ namespace HexGameControls
             AvaloniaProperty.Register<TowerPanel, double>(nameof(Sensitivity));
         #endregion
 
-
+        bool eventFired = false;
         Point _startPoint;
 
         private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -80,8 +82,14 @@ namespace HexGameControls
             _startPoint = e.GetPosition(sender as Visual);
         }
 
+        private void OnPointerExited(object? sender, PointerEventArgs e)
+        {
+            eventFired = false;
+        }
+
         private void OnPointerMoved(object? sender, PointerEventArgs e)
         {
+            if (eventFired) return;
             if (sender is not Visual visual) return;
             var properties = e.GetCurrentPoint(visual).Properties;
             if (!properties.IsLeftButtonPressed) return;
@@ -91,6 +99,7 @@ namespace HexGameControls
             distance = Math.Sqrt(distance);
             if (distance < Sensitivity) return;
 
+            eventFired = true;
             OnDraggingStarted(e);
         }
     }

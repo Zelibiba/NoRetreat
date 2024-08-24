@@ -13,22 +13,26 @@ open HexGameControls
 
 type Tower =
     { Counters: Counter array
-      IsExpanded: bool
-      IsSelected: bool }
+      SelectedIDs: int array
+      IsExpanded: bool }
 
-    member this.Item
-        with get index = this.Counters[index]
-        and set index value = this.Counters[index] <- value
+    member x.Item
+        with get index = x.Counters[index]
+        and set index value = x.Counters[index] <- value
 
-    member this.Owner =
-        Array.tryPick (_.Counter >> CounterInfo.unbox >> _.Country >> Some) this.Counters
+    member x.Height = x.Counters.Length
+
+    member x.Indexes = [| 0 .. x.Height - 1 |]
+
+    member x.Owner =
+        Array.tryPick (_.Info >> CounterInfo.unbox >> _.Country >> Some) x.Counters
 
 module Tower =
 
     let create counters =
         { Counters = counters
-          IsExpanded = false
-          IsSelected = false }
+          SelectedIDs = [||]
+          IsExpanded = false }
 
     let none = create [||]
 
@@ -40,16 +44,13 @@ module Tower =
         tower[idx] <- Counter.update msg tower[idx]
         tower
 
-    let updateCounterAt (tower: Tower) msg idx = 
+    let updateCounterAt (tower: Tower) msg idx =
         tower[idx] <- Counter.update msg tower[idx]
 
     let deselectCounters (tower: Tower) =
-        tower.Counters
-        |> Array.indexed
-        |> Array.filter (snd >> _.IsSelected)
-        |> Array.iter (fst >> updateCounterAt tower (Counter.ChangeSelection false))
+        Array.iter (updateCounterAt tower (Counter.ChangeSelection false)) tower.SelectedIDs
 
-        { tower with IsSelected = false }
+        { tower with SelectedIDs = [||] }
 
     let selectAllCounters (tower: Tower) =
         tower.Counters
@@ -57,22 +58,21 @@ module Tower =
         |> Array.filter (snd >> _.IsSelected >> not)
         |> Array.iter (fst >> updateCounterAt tower (Counter.ChangeSelection false))
 
-        { tower with IsSelected = true }
+        { tower with SelectedIDs = tower.Indexes }
 
     let defineSelection (tower: Tower) =
         let selectedIdxs =
-            tower.Counters
-            |> Array.indexed
-            |> Array.filter (snd >> _.IsSelected)
-            |> Array.map fst
+            Array.filter (get tower >> _.IsSelected) tower.Indexes
 
-        { tower with
-            IsSelected = Array.isEmpty selectedIdxs |> not },
-        selectedIdxs
+        { tower with SelectedIDs = selectedIdxs }
 
-    let removeCounters idxs (tower: Tower) =
-        let removed = Array.map tower.get_Item idxs
-        let counters' = Array.except removed tower.Counters
+    let selectedCounters (tower: Tower) =
+        Array.map (get tower) tower.SelectedIDs
+
+    let removeSelectedCounters (tower: Tower) =
+        let counters' =
+            Array.except tower.SelectedIDs tower.Indexes
+            |> Array.map (get tower)
 
         let tower' =
             if counters'.Length <= 1 then
@@ -82,40 +82,29 @@ module Tower =
 
         { tower' with
             Counters = counters'
-            IsSelected = false },
-        removed
+            SelectedIDs = [||] }
 
-    let addCounters targetIdx newCounters (tower: Tower) =
-        let counters' =
-            match targetIdx with
-            | Some idx -> Array.insertManyAt (idx + 1) newCounters tower.Counters
-            | None -> Array.append tower.Counters newCounters
+    let addCounters newCounters (tower: Tower) =
+        { tower with
+            Counters = Array.append tower.Counters newCounters }
 
-        { tower with Counters = counters' }
-
-    let liftCounterUp counterIdxs (tower: Tower) =
-        Array.sortDescending counterIdxs
-        |> fun array ->
-            if array[0] = tower.Counters.Length - 1
-            then array[1..]
-            else array
+    let liftCounterUp (tower: Tower) =
+        Array.sortDescending tower.SelectedIDs
+        |> fun array -> if array[0] = tower.Height - 1 then array[1..] else array
         |> Array.iter (fun idx ->
             let counter = tower[idx]
-            tower[idx] <- tower[idx+1]
-            tower[idx+1] <- counter)
+            tower[idx] <- tower[idx + 1]
+            tower[idx + 1] <- counter)
 
         tower
 
-    let liftCounterDown counterIdxs (tower: Tower) =
-        Array.sort counterIdxs
-        |> fun array -> 
-            if array[0] = 0
-            then array[1..]
-            else array
+    let liftCounterDown (tower: Tower) =
+        Array.sort tower.SelectedIDs
+        |> fun array -> if array[0] = 0 then array[1..] else array
         |> Array.iter (fun idx ->
             let counter = tower[idx]
-            tower[idx] <- tower[idx-1]
-            tower[idx-1] <- counter)
+            tower[idx] <- tower[idx - 1]
+            tower[idx - 1] <- counter)
 
         tower
 
@@ -128,7 +117,8 @@ type Terrain =
     | KerchStrait
     | City of name: string
 
-    static member fromString(str) =
+module Terrain =
+    let fromString str =
         match str with
         | "Open" -> Open
         | "Forest" -> Forest
@@ -136,6 +126,18 @@ type Terrain =
         | "Mountain" -> Mountain
         | "KerchStrait" -> KerchStrait
         | _ -> City str
+
+    let cost terrain (unitType: UnitType) =
+        match terrain with
+        | Open -> 1
+        | Forest -> if unitType.isTank then 2 else 1
+        | Marsh -> if unitType.isTank then 4 else 2
+        | Mountain -> if unitType.isTank then 3 else 2
+        | KerchStrait -> if unitType.isTank then 3 else 2
+        | City _ -> 1
+
+    let canMoveTo terrain (unit: UnitCounter) =
+        cost terrain unit.Type <= unit.MP.Remained
 
 [<Struct>]
 type Sea =
@@ -153,14 +155,11 @@ type Sea =
         | _ -> failwithf "Can't parse to Sea: %s" str
 
 [<Struct>]
-type ZOC =
-    {
-    SumUSSR: int
-    SumGermany: int
-    }
+type ZOC = { SumUSSR: int; SumGermany: int }
 
 module ZOC =
     let empty = { SumGermany = 0; SumUSSR = 0 }
+
     let isEZOC country (zoc: ZOC) =
         match country with
         | USSR -> zoc.SumGermany > 0
@@ -169,18 +168,21 @@ module ZOC =
     let add country (zoc: ZOC) =
         match country with
         | USSR -> { zoc with SumUSSR = zoc.SumUSSR + 1 }
-        | Germany -> { zoc with SumGermany = zoc.SumGermany + 1 }
+        | Germany ->
+            { zoc with
+                SumGermany = zoc.SumGermany + 1 }
 
     let sub country (zoc: ZOC) =
         match country with
         | USSR -> { zoc with SumUSSR = zoc.SumUSSR - 1 }
-        | Germany -> { zoc with SumGermany = zoc.SumGermany - 1 }
-
-    let toTuple (zoc: ZOC) = zoc.SumUSSR, zoc.SumGermany
+        | Germany ->
+            { zoc with
+                SumGermany = zoc.SumGermany - 1 }
 
 [<Struct>]
 type Selection =
     | NotSelected
+    | CanBeDropped
     | CanMoveTo
     | MovedFrom
 
@@ -190,7 +192,7 @@ type Cell =
       Rivers: Coordinate array
       Sea: Sea option
       BlockedSides: Coordinate array
-      
+
       Tower: Tower
       ZOC: ZOC
       Selection: Selection }
@@ -250,11 +252,12 @@ module HexData =
     let createFromCoords coord = hexes[coord]
 
 module Cell =
-    module Helpers =
-        let setTower (cell: Cell) tower = { cell with Tower = tower }
+    let setTower (cell: Cell) tower = { cell with Tower = tower }
 
-        let unblockedDirections (cell: Cell) =
-            Coordinate.adjacentCoords cell.Coord |> Seq.except cell.BlockedSides
+    let unblockedDirections (cell: Cell) =
+        Coordinate.adjacentCoords cell.Coord |> Seq.except cell.BlockedSides
+
+    let selectedCounters (cell: Cell) = Tower.selectedCounters cell.Tower
 
     type Msg =
         | CounterMsg of int * Counter.Msg
@@ -262,18 +265,12 @@ module Cell =
         | DragEntered
         | Dropped
         | DeselectCounters
-        | RemoveCounters of int array
-        | AddCounters of int option * Counter array
-        | LiftCounterUp of int array
-        | LiftCounterDown of int array
+        | RemoveCounters
+        | AddCounters of Counter array
+        | LiftCounter of up: bool
         | AddZOC of Country
         | SubZOC of Country
         | SetSelection of Selection
-
-    type ExtraData =
-        | SelectedIdxs of int array
-        | RemovedCounters of Counter array
-        | NoData
 
     let update (msg: Msg) (state: Cell) =
         match msg with
@@ -284,46 +281,41 @@ module Cell =
                 |> if not add then Tower.deselectCounters else id
                 |> Tower.updateCounter counterMsg idx
                 |> Tower.defineSelection
-                |> Tuple.map (Helpers.setTower state) SelectedIdxs
+                |> setTower state
             | Counter.ChangeSelection _ ->
-                Array.init state.Tower.Counters.Length id
-                |> Array.iter (Tower.updateCounterAt state.Tower counterMsg)
+                Array.iter (Tower.updateCounterAt state.Tower counterMsg) state.Tower.Indexes
 
-                Tower.defineSelection state.Tower
-                |> Tuple.map (Helpers.setTower state) SelectedIdxs
-            | _ -> Tower.updateCounter counterMsg idx state.Tower |> Helpers.setTower state, NoData
+                Tower.defineSelection state.Tower |> setTower state
+            | _ -> Tower.updateCounter counterMsg idx state.Tower |> setTower state
         | ChangeTowerExpanded ->
-            state.Tower
-            |> Tower.deselectCounters
+            Tower.deselectCounters state.Tower
             |> Tower.setIsExpanded (not state.Tower.IsExpanded)
-            |> Helpers.setTower state, NoData
+            |> setTower state
         | DragEntered
-        | Dropped -> state, NoData
-        | DeselectCounters -> state.Tower |> Tower.deselectCounters |> Helpers.setTower state, NoData
-        | RemoveCounters idxs ->
-            state.Tower
-            |> Tower.removeCounters idxs
-            |> Tuple.map (Helpers.setTower state) RemovedCounters
-        | AddCounters(idxOpt, counters) ->
-            state.Tower
-            |> Tower.addCounters idxOpt counters
-            |> if state.Tower.IsExpanded
-               then id
-               else Tower.selectAllCounters
+        | Dropped -> state
+        | DeselectCounters -> state.Tower |> Tower.deselectCounters |> setTower state
+        | RemoveCounters -> Tower.removeSelectedCounters state.Tower |> setTower state
+        | AddCounters counters ->
+            Tower.addCounters counters state.Tower
+            |> if state.Tower.IsExpanded then id else Tower.selectAllCounters
             |> Tower.defineSelection
-            |> Tuple.map (Helpers.setTower state) SelectedIdxs
-        | LiftCounterUp idxs ->
-            Tower.liftCounterUp idxs state.Tower
+            |> setTower state
+        | LiftCounter true ->
+            Tower.liftCounterUp state.Tower
             |> Tower.defineSelection
-            |> Tuple.map (Helpers.setTower state) SelectedIdxs
-        | LiftCounterDown idxs ->
-            Tower.liftCounterDown idxs state.Tower
+            |> setTower state
+        | LiftCounter false ->
+            Tower.liftCounterDown state.Tower
             |> Tower.defineSelection
-            |> Tuple.map (Helpers.setTower state) SelectedIdxs
-        | AddZOC country -> {state with ZOC = ZOC.add country state.ZOC}, NoData
-        | SubZOC country -> {state with ZOC = ZOC.sub country state.ZOC}, NoData
-        | SetSelection selection -> {state with Selection = selection}, NoData
-            
+            |> setTower state
+        | AddZOC country ->
+            { state with
+                ZOC = ZOC.add country state.ZOC }
+        | SubZOC country ->
+            { state with
+                ZOC = ZOC.sub country state.ZOC }
+        | SetSelection selection -> { state with Selection = selection }
+
 
 
     let towerView (state: Tower) (dispatch: Msg -> unit) : IView =
@@ -345,38 +337,40 @@ module Cell =
                   |> Array.toList
               ) ]
 
-    let diagonal = 92.2
-
-    let computeX coord =
-        1.73205080756 * diagonal * (float coord.C + (float coord.R) / 2.) + 2113.
-
-    let computeY coord =
-        1.5 * diagonal * (float coord.R) + 1601.
-
     let view (state: Cell) (dispatch: Msg -> unit) : IView =
+        let radius = 92.2
+
+        let computeX coord =
+            1.73205080756 * radius * (float coord.C + (float coord.R) / 2.) + 2113.
+
+        let computeY coord = 1.5 * radius * (float coord.R) + 1601.
+
         let checkDragDropArgs onSuccess (args: DragEventArgs) =
-            if args.Data.Contains(DataFormats.Counters) then onSuccess args
+            if args.Data.Contains(DataFormats.Counters) then
+                onSuccess args
 
         HexItem.create
-            [ HexItem.radius diagonal
+            [ HexItem.radius radius
               HexItem.left (computeX state.Coord)
               HexItem.top (computeY state.Coord)
               HexItem.backgroundOpacity 0.5
               HexItem.background (
                   match state.Selection with
-                  | NotSelected -> "transparent"
                   | CanMoveTo -> "green"
                   | MovedFrom -> "red"
+                  | _ -> "transparent"
               )
               //HexItem.borderThickness 1
               //HexItem.borderBrush "red"
               HexItem.clipToBounds false
-              if state.Tower.IsSelected then
+              if not <| Array.isEmpty state.Tower.SelectedIDs then
                   HexItem.zIndex 1
 
-              DragDrop.allowDrop true
-              DragDrop.onDragEnter (checkDragDropArgs (fun _ -> dispatch DragEntered))
-              DragDrop.onDrop (checkDragDropArgs (fun _ -> dispatch Dropped))
+              match state.Selection with
+              | NotSelected -> ()
+              | _ -> DragDrop.onDragEnter (checkDragDropArgs (fun _ -> dispatch DragEntered))
+              match state.Selection with
+              | CanBeDropped -> DragDrop.onDrop (checkDragDropArgs (fun _ -> dispatch Dropped))
+              | _ -> ()
 
-              HexItem.content (towerView state.Tower dispatch)
-            ]
+              HexItem.content (towerView state.Tower dispatch) ]

@@ -10,3 +10,4 @@ type Country =
         | "USSR" -> USSR
         | "Germany" -> Germany
         | _ -> failwithf "Can't parse to Country: %s" str
+
