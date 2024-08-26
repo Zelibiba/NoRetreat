@@ -15,20 +15,15 @@ open Avalonia.FuncUI.Types
 open NoRetreat.Controls
 open HexGameControls
 
-
-type DraggingState =
-    { Counters: Counter array
-      TargetCoord: Coordinate }
-
 [<Struct>]
 type SelectionState =
-    { Location: Coordinate
-      DraggingState: DraggingState option }
+    | NotSelected
+    | Selected of coord: Coordinate
+    | Dragging of origCoord: Coordinate * currentCoord: Coordinate * counters: Counter array
 
 type Field =
     { UpdateValue: bool
-      Cells: Dictionary<Coordinate, Cell>
-      SelectionState: SelectionState option }
+      Cells: Dictionary<Coordinate, Cell> }
 
     member this.Item
         with get coord = this.Cells[coord]
@@ -36,19 +31,19 @@ type Field =
 
 module Field =
     module Helpers =
-        let contains (field: Field) coord = field.Cells.ContainsKey coord
+        let inline contains (field: Field) coord = field.Cells.ContainsKey coord
 
-        let get (field: Field) coord = field[coord]
+        let inline get (field: Field) coord = field[coord]
 
         let tryFind (field: Field) coord =
             match field.Cells.TryGetValue(coord) with
             | true, cell -> Some cell
             | false, _ -> None
 
-        let unblockedDirections coord (field: Field) =
+        let inline unblockedDirections coord (field: Field) =
             Cell.unblockedDirections field[coord] |> Seq.filter (contains field)
 
-        let unblockedDirsWithItself coord field =
+        let inline unblockedDirsWithItself coord field =
             seq {
                 yield! unblockedDirections coord field
                 yield coord
@@ -56,8 +51,7 @@ module Field =
 
         let create dictionary =
             { UpdateValue = false
-              Cells = dictionary
-              SelectionState = None }
+              Cells = dictionary }
 
         let update (field: Field) = { field with UpdateValue = not field.UpdateValue }
 
@@ -67,9 +61,6 @@ module Field =
 
         let updateCellAt (field: Field) msg coord =
             field[coord] <- Cell.update msg field[coord]
-
-        let setDraggingState selectionState draggingStateOpt (field: Field) =
-            { field with SelectionState = Some { selectionState with DraggingState = draggingStateOpt }}
 
         let setCounters rawCoord idxs (field: Field) =
             let coord = Coordinate.create rawCoord
@@ -93,26 +84,40 @@ module Field =
             unblockedDirsWithItself coord field
             |> Seq.iter (updateCellAt field (Cell.AddZOC owner))
 
-            let selectionState =
-                match field.SelectionState with
-                | Some selectionState -> { selectionState with Location = coord }
-                | None -> { Location = coord; DraggingState = None }
-            { field with SelectionState = Some selectionState }
-            |> updateCell (Cell.AddCounters counters) coord
+            updateCell (Cell.AddCounters counters) coord field
 
         let clearCellsSelection coord field =
             unblockedDirsWithItself coord field
-            |> Seq.iter (updateCellAt field (Cell.SetSelection NotSelected))
+            |> Seq.iter (updateCellAt field (Cell.SetSelection Selection.NotSelected))
             field
 
+        let defineMovements coord counters (field: Field) =
+            let units = Array.map (_.Info >> CounterInfo.unbox) counters
+
+            unblockedDirections coord field
+            |> Seq.tuple (get field >> (fun cell ->
+                Array.map (Cell.canMoveTo cell) units)
+                >> Array.reduce (fun selection1 selection2 -> 
+                    match selection1, selection2 with
+                    | Selection.NotSelected, _
+                    | _, Selection.NotSelected -> Selection.NotSelected
+                    | MovedFrom, MovedFrom -> MovedFrom
+                    | _, _ -> CanMoveTo))
+            |> Seq.iter (fun (coord, selection) -> 
+                updateCellAt field (Cell.SetSelection selection) coord)
+            field
+
+
     let init () =
-        HexData.hexes
-        |> Dictionary
-        |> Helpers.create
-        |> Helpers.setCounters (-4, 0) [| 5 |]
-        |> Helpers.setCounters (-5, 0) [| 2 |]
-        |> Helpers.setCounters (-4, -1) [| 1 |]
-        |> Helpers.setCounters (-4, 1) [| 51 |], Cmd.none
+        let field =
+            HexData.hexes
+            |> Dictionary
+            |> Helpers.create
+            |> Helpers.setCounters (-4, 0) [| 5 |]
+            |> Helpers.setCounters (-5, 0) [| 2 |]
+            |> Helpers.setCounters (-4, -1) [| 1 |]
+            |> Helpers.setCounters (-4, 1) [| 51 |]
+        (field, NotSelected), Cmd.none
 
     type Msg = 
         | CellMsg of Coordinate * Cell.Msg
@@ -126,69 +131,60 @@ module Field =
         return ()
         }
 
-    let update (msg: Msg) (state: Field) =
-        match state.SelectionState, msg with
-        | Some _, CellMsg(coord, Cell.CounterMsg(_, Counter.BeginDrag e)) ->
-            state
-            |> Helpers.updateCell (Cell.SetSelection CanBeDropped) coord
-            |> Helpers.update, Cmd.OfAsync.perform doDrag e (fun _ -> EndDragging)
-        | Some { DraggingState = Some draggingState } as Some selectionState,
-          EndDragging ->
-            Helpers.setDraggingState selectionState None state
-            |> Helpers.clearCellsSelection draggingState.TargetCoord, Cmd.none
-        | Some selectionState, CellMsg(coord, Cell.DragEntered)
-          when not <| Option.exists (_.TargetCoord >> ((=) coord)) selectionState.DraggingState ->
-            let draggingState =
-                match selectionState.DraggingState with
-                | Some draggingState ->
-                    let cost =
-                        match state[coord].Selection with
-                        | MovedFrom -> (Terrain.cost state[coord].Terrain) >> ((-)0)
-                        | _ -> Terrain.cost state[coord].Terrain
-                    let updateMP = UnitCounter.payMP cost
-                    let counters = Array.map (Counter.updateUnit updateMP) draggingState.Counters
-
-                    Helpers.clearCellsSelection draggingState.TargetCoord state
-                    |> Helpers.updateCell (Cell.SetSelection MovedFrom) draggingState.TargetCoord |> ignore
-
-                    { draggingState with Counters = counters }
-                | None -> { TargetCoord = coord; Counters = Cell.selectedCounters state[coord] }
+    let update (msg: Msg) (state: Field, selection: SelectionState) =
+        match selection, msg with
+        | Selected _, CellMsg(coord, Cell.CounterMsg(_, Counter.BeginDrag e)) ->
+            let counters = Cell.selectedCounters state[coord]
+            let state' = 
+                Helpers.updateCell (Cell.SetSelection CanBeDropped) coord state
+                |> Helpers.defineMovements coord counters
             
-            let units = Array.map (_.Info >> CounterInfo.unbox) draggingState.Counters
-            Helpers.unblockedDirections coord state
-            |> if draggingState.TargetCoord = coord
-               then id
-               else Seq.filter ((<>) draggingState.TargetCoord)
-            |> Seq.filter (fun coord -> Array.forall (Terrain.canMoveTo state[coord].Terrain) units)
-            |> Seq.iter (Helpers.updateCellAt state (Cell.SetSelection CanMoveTo))
 
-            state
-            |> Helpers.setDraggingState selectionState (Some { draggingState with TargetCoord = coord })
-            |> Helpers.updateCell (Cell.SetSelection CanBeDropped) coord,
-            Cmd.none
-        | Some { Location = loc; DraggingState = Some draggingState },
-          CellMsg(coord, Cell.Dropped) ->
-            Helpers.removeCounters loc state
-            |> Helpers.addCounters coord draggingState.Counters
-            |> Helpers.update, Cmd.none
-        | _, CellMsg(coord, cellMsg) ->
-            let state' = Helpers.updateCell cellMsg coord state
+            (state', Dragging (coord, coord, counters)),
+            Cmd.OfAsync.perform doDrag e (fun _ -> EndDragging)
+        | Dragging (_,coord,_), EndDragging ->
+            (Helpers.clearCellsSelection coord state |> Helpers.update, Selected coord), Cmd.none
+        | Dragging (origCoord, oldCoord, counters),
+          CellMsg(coord, Cell.DragEntered) when oldCoord <> coord ->
+            let cost = Terrain.cost state[coord].Terrain
+            let move (unit: Unit)=
+                if Option.contains coord unit.MovedFrom
+                then Unit.moveBackward
+                else Unit.moveForward oldCoord
+                <| cost <| unit
+            let counters' = Array.map (move |> Counter.UpdateUnit |> Counter.update) counters
 
-            match cellMsg with
+            let state' =
+                Helpers.clearCellsSelection oldCoord state
+                |> Helpers.defineMovements coord counters'
+                |> Helpers.updateCell (Cell.SetSelection CanBeDropped) coord
+            (state',  Dragging (origCoord, coord, counters')), Cmd.none
+        | Dragging (oldCoord, _, counters) as selection,
+          CellMsg(coord, Cell.Dropped) when oldCoord <> coord ->
+            let state' =
+                Helpers.removeCounters oldCoord state
+                |> Helpers.addCounters coord counters
+                |> Helpers.update
+            (state', selection), Cmd.none
+        | selection, CellMsg(coord, cellMsg) ->
+            let state' = Helpers.updateCell cellMsg coord state |> Helpers.update
+
+            (match cellMsg with
             | Cell.CounterMsg(_, Counter.ChangeSelection _)
             | Cell.AddCounters _
             | Cell.LiftCounter _ ->
-                Option.map _.Location state.SelectionState
-                |> Option.filter ((<>) coord)
-                |> Option.iter (Helpers.updateCellAt state' Cell.DeselectCounters)
-
-                let selectionStateOpt =
-                    if Array.isEmpty state'[coord].Tower.SelectedIDs
-                    then None
-                    else Some { Location = coord; DraggingState = None }
-                { state' with SelectionState = selectionStateOpt }
-            | _ -> state'
-            |> Helpers.update, Cmd.none
+                match selection with
+                | Selected loc when loc <> coord ->
+                    Helpers.updateCellAt state' Cell.DeselectCounters loc
+                | _ -> ()
+                let selection' =
+                        if Array.isEmpty state'[coord].Tower.SelectedIDs
+                        then NotSelected
+                        else Selected coord
+                state', selection'
+            | _ -> state', selection),
+            Cmd.none
+            
 
                 
         
@@ -196,7 +192,7 @@ module Field =
 
     let mapImage = Bitmap.create "avares://NoRetreat/Assets/Images/Map.jpg"
 
-    let view (state: Field) (dispatch: Msg -> unit) : IView =
+    let view (state: Field, selection: SelectionState) (dispatch: Msg -> unit) : IView =
         let dispatchCell = Library.dispatchwithIndex dispatch CellMsg
 
         ScrollPane.create
@@ -214,9 +210,8 @@ module Field =
                                     Canvas.background "transparent"
                                     DragDrop.allowDrop true
                                     Canvas.focusable true
-                                    match state.SelectionState with
-                                    | None -> ()
-                                    | Some { Location = coord } ->
+                                    match selection with
+                                    | Selected coord ->
                                         Canvas.onKeyDown (fun e->
                                             e.Handled <- true
                                             match e.Key with
@@ -224,18 +219,19 @@ module Field =
                                             | Key.Down -> dispatchCell coord (Cell.LiftCounter false)
                                             | _ -> ()
                                         )
+                                    | _ -> ()
                                     Canvas.children
                                         [ yield!
                                               state.Cells.Values
                                               |> Seq.map (fun cell -> Cell.view cell (dispatchCell cell.Coord))
-                                          match state.SelectionState with
-                                          | Some selectionState when selectionState.DraggingState.IsSome ->
+                                          match selection with
+                                          | Dragging(coord,_,_) ->
                                               yield MovableBorder.create
                                                     [ MovableBorder.zIndex 10
                                                       MovableBorder.opacity 0.7
                                                       MovableBorder.child (
                                                           Cell.towerView
-                                                              (Tower.selectedCounters state[selectionState.Location].Tower|> Tower.create)
+                                                              (Tower.selectedCounters state[coord].Tower|> Tower.create)
                                                               ignore
                                                       ) ]
                                           | _ -> ()

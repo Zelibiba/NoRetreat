@@ -80,38 +80,52 @@ type CounterSide =
         | HalfSide side -> side
 
 [<Struct>]
-type Movement = { Current: int; Remained: int }
+type Movement = 
+    { Current: int
+      Remained: int 
+      History: Coordinate list }
 
 module Movement =
     let create movementPoints =
         { Current = movementPoints
-          Remained = movementPoints }
+          Remained = movementPoints
+          History = [] }
 
 [<Struct>]
-type UnitCounter =
+type Unit =
     { CurrentSide: CounterSide
       OtherSide: CounterSide
       Country: Country
       MP: Movement }
 
-      member private x.unboxedCurrentSide = CounterSide.unbox x.CurrentSide
-      member x.Type =  x.unboxedCurrentSide.Type
+    member private x.unboxedCurrentSide = CounterSide.unbox x.CurrentSide
+    member x.Type =  x.unboxedCurrentSide.Type
+    member x.MovedFrom = List.tryHead x.MP.History
 
-module UnitCounter =
-    let swapSides unitCounter =
-        { unitCounter with
-            CurrentSide = unitCounter.OtherSide
-            OtherSide = unitCounter.CurrentSide }
+module Unit =
+    let swapSides unit =
+        { unit with
+            CurrentSide = unit.OtherSide
+            OtherSide = unit.CurrentSide }
 
-    let payMP cost (unit: UnitCounter) =
-        let payment = cost unit.Type
-        { unit with MP.Remained = unit.MP.Remained - payment }
+    let moveForward oldCoord cost (unit: Unit) =
+        let mp = { unit.MP with 
+                    Remained = unit.MP.Remained - cost unit.Type
+                    History = [oldCoord] @ unit.MP.History }
+        { unit with MP = mp }
 
-type CounterInfo = Unit of UnitCounter
+    let moveBackward cost (unit: Unit) =
+        let mp = { unit.MP with 
+                    Remained = unit.MP.Remained + cost unit.Type
+                    History = unit.MP.History[1..] }
+        { unit with MP = mp }
+
+
+type CounterInfo = Unit of Unit
 
 module CounterInfo =
     let unbox (Unit unit) = unit
-    let update f = unbox >> f >> Unit
+    let map f = unbox >> f >> Unit
 
 type Counter =
     { IsSelected: bool
@@ -165,9 +179,10 @@ module UnitData =
           MP = Movement.create fullSide.Movement }
 
 module Counter =
-    let inline updateInfo f (counter: Counter) =
-        { counter with Info = f counter.Info }
-    let updateUnit = CounterInfo.update >> updateInfo
+    module private Helpers =
+        let updateInfo f (counter: Counter) =
+            { counter with Info = f counter.Info }
+        let map = CounterInfo.map >> updateInfo
 
     let init id =
         { IsSelected = false
@@ -178,6 +193,7 @@ module Counter =
         | ChangeSelection of add: bool
         | Flip of back: bool
         | BeginDrag of PointerEventArgs
+        | UpdateUnit of (Unit -> Unit)
 
     let update (msg: Msg) (state: Counter) =
         match msg with
@@ -186,8 +202,9 @@ module Counter =
                 IsSelected = not state.IsSelected }
         | Flip back ->
             { state with IsSideSwapped = not back }
-            |> updateUnit UnitCounter.swapSides
+            |> Helpers.map Unit.swapSides
         | BeginDrag _ -> state
+        | UpdateUnit updateUnit -> Helpers.map updateUnit state
 
     //let iconView unitType : IView =
     //    let height = 20.
@@ -259,10 +276,10 @@ module Counter =
             [ DraggableBorder.height Size
               DraggableBorder.width Size
               if state.IsSelected then
-                  match unit.Country with
-                  | USSR -> "Green"
-                  | Germany -> "Red"
-                  |> DraggableBorder.borderBrush
+                  DraggableBorder.borderBrush (
+                      match unit.Country with
+                      | USSR -> "Green"
+                      | Germany -> "Red")
 
                   DraggableBorder.borderThickness 3
               else

@@ -136,9 +136,6 @@ module Terrain =
         | KerchStrait -> if unitType.isTank then 3 else 2
         | City _ -> 1
 
-    let canMoveTo terrain (unit: UnitCounter) =
-        cost terrain unit.Type <= unit.MP.Remained
-
 [<Struct>]
 type Sea =
     | Baltic
@@ -258,6 +255,14 @@ module Cell =
         Coordinate.adjacentCoords cell.Coord |> Seq.except cell.BlockedSides
 
     let selectedCounters (cell: Cell) = Tower.selectedCounters cell.Tower
+
+    let canMoveTo cell (unit: Unit) =
+        match unit.MovedFrom with
+        | Some coord when coord = cell.Coord -> MovedFrom
+        | _ -> 
+            if Terrain.cost cell.Terrain unit.Type <= unit.MP.Remained
+            then CanMoveTo
+            else NotSelected
 
     type Msg =
         | CounterMsg of int * Counter.Msg

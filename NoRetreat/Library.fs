@@ -20,6 +20,9 @@ module Library =
     //    |> (fun item' -> (index, item'))
     //    |> state.set_Item
 
+module Seq =
+    let inline tuple f seq = Seq.map (fun x -> (x, f x)) seq
+
 module Tuple =
     let inline map f1 f2 (item1, item2) = (f1 item1, f2 item2)
 
