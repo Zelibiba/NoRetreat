@@ -139,19 +139,18 @@ module Field =
                 Helpers.updateCell (Cell.SetSelection CanBeDropped) coord state
                 |> Helpers.defineMovements coord counters
             
-
             (state', Dragging (coord, coord, counters)),
             Cmd.OfAsync.perform doDrag e (fun _ -> EndDragging)
         | Dragging (_,coord,_), EndDragging ->
             (Helpers.clearCellsSelection coord state |> Helpers.update, Selected coord), Cmd.none
         | Dragging (origCoord, oldCoord, counters),
           CellMsg(coord, Cell.DragEntered) when oldCoord <> coord ->
-            let cost = Terrain.cost state[coord].Terrain
+            let cost loc = Terrain.cost state[loc].Terrain
             let move (unit: Unit)=
                 if Option.contains coord unit.MovedFrom
-                then Unit.moveBackward
-                else Unit.moveForward oldCoord
-                <| cost <| unit
+                then Unit.moveBackward (cost oldCoord)
+                else Unit.moveForward oldCoord (cost coord)
+                <| unit
             let counters' = Array.map (move |> Counter.UpdateUnit |> Counter.update) counters
 
             let state' =
