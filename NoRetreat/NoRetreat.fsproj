@@ -17,11 +17,14 @@
     <Compile Include="Library.fs" />
     <Compile Include="EventExtention.fs" />
     <Compile Include="Controls.fs" />
-    <Compile Include="Model\Types.fs" />
     <Compile Include="Model\Coordinate.fs" />
     <Compile Include="Model\Counter.fs" />
     <Compile Include="Model\Cell.fs" />
-    <Compile Include="Model\Field.fs" />
+    <Compile Include="Model\Field\Types.fs" />
+    <Compile Include="Model\Field\Helpers.fs" />
+    <Compile Include="Model\Field\Movement.fs" />
+    <Compile Include="Model\Field\Supply.fs" />
+    <Compile Include="Model\Field\Field.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -39,6 +42,7 @@
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.0.11" />
     <PackageReference Include="Elmish" Version="4.2.0" />
     <PackageReference Include="FSharp.Data" Version="6.4.0" />
+    <PackageReference Include="MessageBox.Avalonia" Version="3.1.6" />
   </ItemGroup>
 
   <ItemGroup>

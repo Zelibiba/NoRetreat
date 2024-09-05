@@ -15,6 +15,29 @@ open NoRetreat.Controls.EventLib
 open HexGameControls
 
 [<Struct>]
+type Country =
+    | USSR
+    | Germany
+
+    member x.Opposite =
+        match x with
+        | USSR -> Germany
+        | Germany -> USSR
+
+    static member fromString(str) =
+        match str with
+        | "USSR" -> USSR
+        | "Germany" -> Germany
+        | _ -> failwithf "Can't parse to Country: %s" str
+
+[<Struct>]
+type Selection =
+    | NotSelected
+    | CanBeSelected
+    | Selected
+
+
+[<Struct>]
 type UnitType =
     | Infantry
     | Regional
@@ -31,8 +54,7 @@ type UnitType =
         | SSTank -> true
         | _ -> false
 
-module UnitType =
-    let fromString str =
+    static member fromString str =
         match str with
         | "Infantry" -> Infantry
         | "Regional" -> Regional
@@ -43,8 +65,6 @@ module UnitType =
         | "SSMechanized" -> SSMechanized
         | "SSTank" -> SSTank
         | _ -> failwithf "Can't parse to UnitType: %s" str
-
-    let isTank (unitType: UnitType) = unitType.isTank
 
 [<Struct>]
 type AttackType =
@@ -67,7 +87,7 @@ type SideInfo =
     { Name: string
       Type: UnitType
       Attack: AttackInfo
-      Movement: int }
+      MP: int }
 
 [<Struct>]
 type CounterSide =
@@ -92,48 +112,28 @@ module Movement =
           History = [] }
 
 [<Struct>]
-type Unit =
-    { CurrentSide: CounterSide
-      OtherSide: CounterSide
-      Country: Country
-      MP: Movement }
-
-    member private x.unboxedCurrentSide = CounterSide.unbox x.CurrentSide
-    member x.Type =  x.unboxedCurrentSide.Type
-    member x.MovedFrom = List.tryHead x.MP.History
-
-module Unit =
-    let swapSides unit =
-        { unit with
-            CurrentSide = unit.OtherSide
-            OtherSide = unit.CurrentSide }
-
-    let moveForward oldCoord cost (unit: Unit) =
-        let mp = { unit.MP with 
-                    Remained = unit.MP.Remained - cost unit.Type
-                    History = [oldCoord] @ unit.MP.History }
-        { unit with MP = mp }
-
-    let moveBackward cost (unit: Unit) =
-        let mp = { unit.MP with 
-                    Remained = unit.MP.Remained + cost unit.Type
-                    History = unit.MP.History[1..] }
-        { unit with MP = mp }
-
-
-type CounterInfo = Unit of Unit
-
-module CounterInfo =
-    let unbox (Unit unit) = unit
-    let map f = unbox >> f >> Unit
+type CounterBuff =
+    | NoBuff
+    | OutOfSupply
 
 type Counter =
-    { IsSelected: bool
-      IsSideSwapped: bool
-      Info: CounterInfo }
+    { CurrentSide: CounterSide
+      OtherSide: CounterSide
+      Movement: Movement
+      Country: Country
+
+      Buff: CounterBuff
+      
+      Selection: Selection
+      IsSideSwapped: bool }
+
+    member x.IsSelected = x.Selection = Selected
+    member private x.unboxedCurrentSide = CounterSide.unbox x.CurrentSide
+    member x.Type =  x.unboxedCurrentSide.Type
+    member x.MovedFrom = List.tryHead x.Movement.History
 
 module UnitData =
-    type T =
+    type private T =
         XmlProvider<"""
         <Units>
 			<Unit id="6" country="Germany">
@@ -158,16 +158,16 @@ module UnitData =
 		    </Unit>
 		</Units>""">
 
-    let data =
+    let private data =
         T.Load("avares://NoRetreat/Assets/UnitCounters.xml" |> Stream.create).Units
 
-    let createSide (side: T.Side) =
+    let private createSide (side: T.Side) =
         { Name = side.Name
           Type = UnitType.fromString side.Type
           Attack =
             { Strength = side.Strength.Value
               Type = AttackType.fromString side.Strength.Type }
-          Movement = side.Movement }
+          MP = side.Movement }
 
     let createCounter id =
         let unit = Array.find (fun (un: T.Unit) -> un.Id = id) data
@@ -175,36 +175,49 @@ module UnitData =
 
         { CurrentSide = FullSide fullSide
           OtherSide = createSide unit.Sides[1] |> HalfSide
+          Movement = Movement.create fullSide.MP 
           Country = Country.fromString unit.Country
-          MP = Movement.create fullSide.Movement }
+
+          Buff = NoBuff
+          
+          Selection = CanBeSelected
+          IsSideSwapped = false }
 
 module Counter =
     module private Helpers =
-        let updateInfo f (counter: Counter) =
-            { counter with Info = f counter.Info }
-        let map = CounterInfo.map >> updateInfo
+        let swapSides counter =
+            { counter with
+                CurrentSide = counter.OtherSide
+                OtherSide = counter.CurrentSide }
 
-    let init id =
-        { IsSelected = false
-          IsSideSwapped = false
-          Info = UnitData.createCounter id |> Unit }
+    let moveForward currentCoord cost counter =
+        { counter.Movement with 
+            Remained = counter.Movement.Remained - cost currentCoord counter.Type
+            History = [currentCoord] @ counter.Movement.History }
+
+    let moveBackward cost counter =
+        { counter.Movement with 
+            Remained = counter.Movement.Remained + cost counter.Movement.History[0] counter.Type
+            History = counter.Movement.History[1..] }
+
+    let init = UnitData.createCounter
 
     type Msg =
         | ChangeSelection of add: bool
         | Flip of back: bool
         | BeginDrag of PointerEventArgs
-        | UpdateUnit of (Unit -> Unit)
+        | MoveCounter of (Counter -> Movement)
 
     let update (msg: Msg) (state: Counter) =
         match msg with
         | ChangeSelection _ ->
-            { state with
-                IsSelected = not state.IsSelected }
-        | Flip back ->
-            { state with IsSideSwapped = not back }
-            |> Helpers.map Unit.swapSides
+            match state.Selection with
+                | NotSelected -> state
+                | CanBeSelected -> { state with Selection = Selected }
+                | Selected -> { state with Selection = CanBeSelected }
+        | Flip back -> { state with IsSideSwapped = not back } |> Helpers.swapSides
         | BeginDrag _ -> state
-        | UpdateUnit updateUnit -> Helpers.map updateUnit state
+        | MoveCounter updateUnit -> { state with Movement = updateUnit state }
 
     //let iconView unitType : IView =
     //    let height = 20.
@@ -267,33 +280,43 @@ module Counter =
             sprintf "avares://NoRetreat/Assets/Units/%A/%s.PNG" country unitInfo.Name
             |> Bitmap.create
 
-    let Size = 100
+    let private imageOOS = Bitmap.create "avares://NoRetreat/Assets/Images/OutOfSupply.PNG"
+
+    let ImageOOS () = 
+        Image.create [
+            Image.height 80
+            Image.width 80
+            Image.source imageOOS 
+        ] |> generalize
 
     let view (state: Counter) (dispatch: Msg -> unit) : IView =
-        let (Unit unit) = state.Info
-
+        let size = 100
         DraggableBorder.create
-            [ DraggableBorder.height Size
-              DraggableBorder.width Size
-              if state.IsSelected then
-                  DraggableBorder.borderBrush (
-                      match unit.Country with
-                      | USSR -> "Green"
-                      | Germany -> "Red")
-
-                  DraggableBorder.borderThickness 3
-              else
-                  DraggableBorder.borderBrush "Black"
-                  DraggableBorder.borderThickness 1
-              if state.IsSelected then
-                  if state.IsSideSwapped then
-                      DraggableBorder.zIndex 2
-                  else
-                      DraggableBorder.zIndex 1
+            [ DraggableBorder.height size
+              DraggableBorder.width size
               DraggableBorder.cornerRadius 15
               //DraggableBorder.boxShadow (BoxShadow.Parse("-3 4 0 0 #515151"))
 
+              match state.Selection with
+              | NotSelected -> 
+                  DraggableBorder.borderBrush "Black"
+                  DraggableBorder.borderThickness 1
+              | CanBeSelected ->
+                  DraggableBorder.borderBrush (
+                      match state.Country with
+                      | USSR -> "Green"
+                      | Germany -> "Red")
+                  DraggableBorder.borderThickness 5
+              | Selected ->
+                  DraggableBorder.borderBrush "Black"
+                  DraggableBorder.borderThickness 5
+                  if not state.IsSideSwapped then
+                      DraggableBorder.zIndex 1
+                      DraggableBorder.sensitivity 20
+                      DraggableBorder.onDraggingStarted (EventLib.handled >> _.PointerArgs >> BeginDrag >> dispatch)
+
               if state.IsSideSwapped then
+                  DraggableBorder.zIndex 2
                   DraggableBorder.onPointerReleased (EventLib.handled >> fun _ -> Flip true |> dispatch)
               else
                   DraggableBorder.onPointerPressedExt2 (
@@ -304,16 +327,27 @@ module Counter =
                           else if not state.IsSelected then
                               dispatch (ChangeSelection false)),
                       (fun _ -> Flip false |> dispatch),
-                      SubPatchOptions.OnChangeOf state.IsSelected
+                      SubPatchOptions.OnChangeOf state.Selection
                   )
 
-                  if state.IsSelected then
-                      DraggableBorder.sensitivity 20
-                      DraggableBorder.onDraggingStarted (EventLib.handled >> _.PointerArgs >> BeginDrag >> dispatch)
-
               DraggableBorder.child (
-                  match unit.CurrentSide with
-                  | FullSide unitInfo
-                  | HalfSide unitInfo ->
-                      Image.create [ Image.source (loadImage (unit.Country, unitInfo)) ] |> generalize
-              ) ]
+                  Panel.create [
+                      Panel.children [
+                          match state.CurrentSide with
+                          | FullSide unitInfo
+                          | HalfSide unitInfo ->
+                              Image.create [ Image.source (loadImage (state.Country, unitInfo)) ] |> generalize 
+                          Border.create [
+                              Border.horizontalAlignment HorizontalAlignment.Stretch
+                              Border.verticalAlignment VerticalAlignment.Stretch
+                              Border.cornerRadius 10
+                              Border.borderThickness 5
+                              Border.borderBrush (
+                                  match state.Buff with
+                                  | NoBuff -> "transparent"
+                                  | OutOfSupply -> "orange")
+                          ]
+                      ]
+                  ]   
+              )
+            ]

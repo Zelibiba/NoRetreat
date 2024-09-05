@@ -1,5 +1,6 @@
 namespace NoRetreat
 
+open System.IO
 open Avalonia
 open Avalonia.Controls
 open Avalonia.Controls.ApplicationLifetimes
@@ -10,6 +11,7 @@ open Elmish
 open Avalonia.FuncUI.Hosts
 open Avalonia.FuncUI.Elmish
 
+open NoRetreat.Field
 
 type MainWindow() as this =
     inherit HostWindow()
@@ -26,7 +28,11 @@ type MainWindow() as this =
 
         Elmish.Program.mkProgram Field.init Field.update Field.view
         |> Program.withHost this
-        //|> Program.withConsoleTrace
+        |> Program.withErrorHandler (fun (s,e) ->
+            MsBox.Avalonia.MessageBoxManager
+                .GetMessageBoxStandard("Error", s + "\n--------------\n" + e.Message)
+                .ShowWindowAsync()
+            |> Async.AwaitTask |> ignore)
         |> Program.run
 
 

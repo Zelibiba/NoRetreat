@@ -1,4 +1,4 @@
-﻿namespace NoRetreat.Controls
+﻿namespace NoRetreat
 
 open Avalonia
 open Avalonia.Input

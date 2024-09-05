@@ -115,7 +115,7 @@
 		<hex column="1" type="Open" sea="Baltic">
 			<river>0,-1</river>
 		</hex>
-		<hex column="2" type="Кёнгсберг" sea="Baltic">
+		<hex column="2" type="Кёнигсберг" sea="Baltic">
 			<river>0,1</river>
 		</hex>
 		<hex column="3" type="Open" sea="Baltic">

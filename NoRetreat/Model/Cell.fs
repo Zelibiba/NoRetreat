@@ -4,7 +4,7 @@ open System.IO
 open System.Collections.Generic
 open FSharp.Data
 open Avalonia.Input
-open Avalonia.Controls.Shapes
+open Avalonia.Controls
 open Avalonia.Layout
 open Avalonia.FuncUI.DSL
 open Avalonia.FuncUI.Types
@@ -25,7 +25,7 @@ type Tower =
     member x.Indexes = [| 0 .. x.Height - 1 |]
 
     member x.Owner =
-        Array.tryPick (_.Info >> CounterInfo.unbox >> _.Country >> Some) x.Counters
+        Array.tryPick ((fun n -> n.Country) >> Some) x.Counters
 
 module Tower =
 
@@ -109,15 +109,42 @@ module Tower =
         tower
 
 [<Struct>]
+type City = 
+    { Name: string
+      Motherland: Country
+      Owner: Country
+      IsSupplied: bool }
+
+[<Struct>]
 type Terrain =
     | Open
     | Forest
     | Marsh
     | Mountain
     | KerchStrait
-    | City of name: string
+    | City of City
 
 module Terrain =
+    let private createCity name =
+        let country = 
+            match name with
+            | "Берлин"
+            | "Познань"
+            | "Кёнигсберг"
+            | "Варшава"
+            | "Бреслау"
+            | "Прага"
+            | "Вена"
+            | "Люблин"
+            | "Будапешт"
+            | "Белград"
+            | "Бухарест" -> Germany
+            | _ -> USSR
+        { Name = name
+          Motherland = country
+          Owner = country
+          IsSupplied = false }
+
     let fromString str =
         match str with
         | "Open" -> Open
@@ -125,7 +152,7 @@ module Terrain =
         | "Marsh" -> Marsh
         | "Mountain" -> Mountain
         | "KerchStrait" -> KerchStrait
-        | _ -> City str
+        | _ -> createCity str |> City
 
     let cost terrain (unitType: UnitType) =
         match terrain with
@@ -135,6 +162,12 @@ module Terrain =
         | Mountain -> if unitType.isTank then 3 else 2
         | KerchStrait -> if unitType.isTank then 3 else 2
         | City _ -> 1
+        |> ignore
+        0
+
+    let getCity = function
+        | City city -> city
+        | terrain -> failwith (sprintf "Cell is %A, not City" terrain)
 
 [<Struct>]
 type Sea =
@@ -157,27 +190,27 @@ type ZOC = { SumUSSR: int; SumGermany: int }
 module ZOC =
     let empty = { SumGermany = 0; SumUSSR = 0 }
 
-    let isEZOC country (zoc: ZOC) =
+    let isEZOCFor country (zoc: ZOC) =
         match country with
         | USSR -> zoc.SumGermany > 0
         | Germany -> zoc.SumUSSR > 0
 
-    let add country (zoc: ZOC) =
+    let add country quantity (zoc: ZOC) =
         match country with
-        | USSR -> { zoc with SumUSSR = zoc.SumUSSR + 1 }
+        | USSR -> { zoc with SumUSSR = zoc.SumUSSR + quantity }
         | Germany ->
             { zoc with
-                SumGermany = zoc.SumGermany + 1 }
+                SumGermany = zoc.SumGermany + quantity }
 
-    let sub country (zoc: ZOC) =
+    let sub country quantity (zoc: ZOC) =
         match country with
-        | USSR -> { zoc with SumUSSR = zoc.SumUSSR - 1 }
+        | USSR -> { zoc with SumUSSR = zoc.SumUSSR - quantity }
         | Germany ->
             { zoc with
-                SumGermany = zoc.SumGermany - 1 }
+                SumGermany = zoc.SumGermany - quantity }
 
 [<Struct>]
-type Selection =
+type CellSelection =
     | NotSelected
     | CanBeDropped
     | CanMoveTo
@@ -189,10 +222,13 @@ type Cell =
       Rivers: Coordinate array
       Sea: Sea option
       BlockedSides: Coordinate array
+      MapEdge: Country option
 
       Tower: Tower
       ZOC: ZOC
-      Selection: Selection }
+      Selection: CellSelection}
+
+      member x.Owner = x.Tower.Owner
 
 module HexData =
     type T =
@@ -228,7 +264,6 @@ module HexData =
          >
 
     let createfromHex row (hex: T.Hex) =
-        let edge = Option.map Country.fromString hex.MapEdge
         let coord = Coordinate.create (row, hex.Column)
 
         { Coord = coord
@@ -236,6 +271,7 @@ module HexData =
           Rivers = Array.map (Coordinate.fromString >> ((+) coord)) hex.Rivers
           Sea = Option.map Sea.fromString hex.Sea
           BlockedSides = Array.map (Coordinate.fromString >> ((+) coord)) hex.Blockeds
+          MapEdge = Option.map Country.fromString hex.MapEdge
 
           Tower = Tower.none
           ZOC = ZOC.empty
@@ -256,11 +292,11 @@ module Cell =
 
     let selectedCounters (cell: Cell) = Tower.selectedCounters cell.Tower
 
-    let canMoveTo cell (unit: Unit) =
-        match unit.MovedFrom with
+    let canMoveTo cell (counter: Counter) =
+        match counter.MovedFrom with
         | Some coord when coord = cell.Coord -> MovedFrom
         | _ -> 
-            if Terrain.cost cell.Terrain unit.Type <= unit.MP.Remained
+            if Terrain.cost cell.Terrain counter.Type <= counter.Movement.Remained
             then CanMoveTo
             else NotSelected
 
@@ -273,9 +309,10 @@ module Cell =
         | RemoveCounters
         | AddCounters of Counter array
         | LiftCounter of up: bool
-        | AddZOC of Country
-        | SubZOC of Country
-        | SetSelection of Selection
+        | AddZOC of Country * int
+        | SubZOC of Country * int
+        | SetSelection of CellSelection
+        | SetCitySupply of bool
 
     let update (msg: Msg) (state: Cell) =
         match msg with
@@ -313,34 +350,64 @@ module Cell =
             Tower.liftCounterDown state.Tower
             |> Tower.defineSelection
             |> setTower state
-        | AddZOC country ->
+        | AddZOC (country, quantity) ->
             { state with
-                ZOC = ZOC.add country state.ZOC }
-        | SubZOC country ->
+                ZOC = ZOC.add country quantity state.ZOC }
+        | SubZOC (country, quantity) ->
             { state with
-                ZOC = ZOC.sub country state.ZOC }
+                ZOC = ZOC.sub country quantity state.ZOC }
         | SetSelection selection -> { state with Selection = selection }
+        | SetCitySupply isSupplied ->
+            let city = Terrain.getCity state.Terrain
+            let city' = { city with IsSupplied = isSupplied }
+            { state with Terrain = City city' }
 
 
 
     let towerView (state: Tower) (dispatch: Msg -> unit) : IView =
         let dispatchCounter = Library.dispatchwithIndex dispatch CounterMsg
 
-        TowerPanel.create
-            [ //TowerPanel.height Counter.Size
-              //TowerPanel.width Counter.Size
-              TowerPanel.horizontalAlignment HorizontalAlignment.Center
-              TowerPanel.verticalAlignment VerticalAlignment.Center
-              if state.IsExpanded then
-                  TowerPanel.deltaPadding (17.5, -38.5)
-              else
-                  TowerPanel.deltaPadding (5, -11)
-              TowerPanel.onDoubleTapped (fun _ -> dispatch ChangeTowerExpanded)
-              TowerPanel.children (
-                  state.Counters
-                  |> Array.mapi (fun idx counter -> Counter.view counter (dispatchCounter idx))
-                  |> Array.toList
-              ) ]
+        TowerPanel.create [ 
+            TowerPanel.horizontalAlignment HorizontalAlignment.Center
+            TowerPanel.verticalAlignment VerticalAlignment.Center
+            if state.IsExpanded then
+                TowerPanel.deltaPadding (17.5, -38.5)
+            else
+                TowerPanel.deltaPadding (5, -11)
+            TowerPanel.onDoubleTapped (fun _ -> dispatch ChangeTowerExpanded)
+            TowerPanel.children (
+                state.Counters
+                |> Array.mapi (fun idx counter -> Counter.view counter (dispatchCounter idx))
+                |> Array.toList) 
+            ToolTip.placement PlacementMode.BottomEdgeAlignedRight
+            ToolTip.showDelay 1000
+            ToolTip.tip (
+                WrapPanel.create [
+                    WrapPanel.orientation Orientation.Horizontal
+                    WrapPanel.children (
+                        state.Counters |> Array.toList
+                        |> List.map (fun counter ->
+                            Border.create [
+                                Border.borderBrush "black"
+                                Border.borderThickness 1
+                                Border.margin 10
+                                Border.padding 2
+                                Border.child (
+                                    StackPanel.create [
+                                        StackPanel.orientation Orientation.Vertical
+                                        StackPanel.children [
+                                            Counter.view counter ignore
+                                            if counter.Buff = OutOfSupply then
+                                                Counter.ImageOOS()
+                                        ]
+                                    ]
+                                )
+                            ]
+                        )
+                    )
+                ]
+            )
+        ]
 
     let view (state: Cell) (dispatch: Msg -> unit) : IView =
         let radius = 92.2
@@ -365,6 +432,16 @@ module Cell =
                   | MovedFrom -> "red"
                   | _ -> "transparent"
               )
+              //HexItem.background (
+              //    if state.ZOC.SumGermany > 0 && state.ZOC.SumUSSR > 0 then
+              //        "green"
+              //    else if state.ZOC.SumGermany > 0 then
+              //        "gray"
+              //    else if state.ZOC.SumUSSR > 0 then
+              //        "red"
+              //    else
+              //        "transparent"
+              //)
               //HexItem.borderThickness 1
               //HexItem.borderBrush "red"
               HexItem.clipToBounds false
@@ -378,4 +455,18 @@ module Cell =
               | CanBeDropped -> DragDrop.onDrop (checkDragDropArgs (fun _ -> dispatch Dropped))
               | _ -> ()
 
-              HexItem.content (towerView state.Tower dispatch) ]
+              HexItem.content (towerView state.Tower dispatch)
+              ]
+              //HexItem.content (
+              //    Panel.create [
+              //        Panel.horizontalAlignment HorizontalAlignment.Center
+              //        Panel.verticalAlignment VerticalAlignment.Center
+              //        Panel.children [
+              //            TextBlock.create [
+              //                TextBlock.text (sprintf "%i, %i" state.Coord.R state.Coord.C)
+              //                TextBlock.fontSize 35
+              //            ]
+              //            towerView state.Tower dispatch
+              //        ]
+              //    ]
+              //) ]
