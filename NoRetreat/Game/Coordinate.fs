@@ -1,4 +1,4 @@
-﻿namespace NoRetreat
+﻿namespace NoRetreat.Game
 
 [<Struct>]
 type Coordinate =

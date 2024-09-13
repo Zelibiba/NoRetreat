@@ -1,11 +1,16 @@
 ﻿namespace NoRetreat
 
 open Avalonia
-open Avalonia.Input
+open Avalonia.Controls
 open Avalonia.FuncUI.Builder
 open Avalonia.FuncUI.DSL
 open Avalonia.FuncUI.Types
 open HexGameControls
+
+[<AutoOpen>]
+module Image =
+    let createWith (value: Avalonia.Media.IImage) =
+        Image.create [Image.source value]
 
 [<AutoOpen>]
 module ScrollPane =

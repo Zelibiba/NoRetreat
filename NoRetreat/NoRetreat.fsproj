@@ -17,14 +17,15 @@
     <Compile Include="Library.fs" />
     <Compile Include="EventExtention.fs" />
     <Compile Include="Controls.fs" />
-    <Compile Include="Model\Coordinate.fs" />
-    <Compile Include="Model\Counter.fs" />
-    <Compile Include="Model\Cell.fs" />
-    <Compile Include="Model\Field\Types.fs" />
-    <Compile Include="Model\Field\Helpers.fs" />
-    <Compile Include="Model\Field\Movement.fs" />
-    <Compile Include="Model\Field\Supply.fs" />
-    <Compile Include="Model\Field\Field.fs" />
+    <Compile Include="Game\Types.fs" />
+    <Compile Include="Game\Coordinate.fs" />
+    <Compile Include="Game\Counter.fs" />
+    <Compile Include="Game\Tower.fs" />
+    <Compile Include="Game\Cell.fs" />
+    <Compile Include="Game\Field\Field.fs" />
+    <Compile Include="Game\Field\Movement.fs" />
+    <Compile Include="Game\Field\Supply.fs" />
+    <Compile Include="Game\Field\Main.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -37,7 +38,6 @@
     <PackageReference Include="Avalonia.FuncUI.Elmish" Version="1.4.0" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.0.11" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.0.11" />
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
     <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.0.11" />
     <PackageReference Include="Elmish" Version="4.2.0" />
@@ -51,5 +51,9 @@
 
   <ItemGroup>
     <PackageReference Update="FSharp.Core" Version="8.0.300" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Assets\Icons\" />
   </ItemGroup>
 </Project>

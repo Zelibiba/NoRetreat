@@ -11,7 +11,7 @@ open Elmish
 open Avalonia.FuncUI.Hosts
 open Avalonia.FuncUI.Elmish
 
-open NoRetreat.Field
+open NoRetreat.Game.Field
 
 type MainWindow() as this =
     inherit HostWindow()
@@ -23,10 +23,10 @@ type MainWindow() as this =
 
         #if DEBUG
         base.AttachDevTools()
-        TopLevel.GetTopLevel(this).RendererDiagnostics.DebugOverlays <- Avalonia.Rendering.RendererDebugOverlays.Fps
+        //TopLevel.GetTopLevel(this).RendererDiagnostics.DebugOverlays <- Avalonia.Rendering.RendererDebugOverlays.Fps
         #endif
 
-        Elmish.Program.mkProgram Field.init Field.update Field.view
+        Elmish.Program.mkProgram Main.init Main.update Main.view
         |> Program.withHost this
         |> Program.withErrorHandler (fun (s,e) ->
             MsBox.Avalonia.MessageBoxManager

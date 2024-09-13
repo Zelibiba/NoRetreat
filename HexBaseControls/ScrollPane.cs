@@ -17,6 +17,8 @@ namespace HexGameControls
             DetachedFromVisualTree += ScrollPane_DetachedFromVisualTree;
 
             this.GetObservable(BoundsProperty).Subscribe(new AnonymousObserver<Rect>(Rescale));
+
+            ClipToBounds = true;
         }
 
         private Matrix _matrix;
