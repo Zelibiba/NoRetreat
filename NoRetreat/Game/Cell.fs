@@ -24,6 +24,7 @@ type Terrain =
     | Mountain
     | KerchStrait
     | City of City
+    | Area
 
 module Terrain =
     let private createCity name =
@@ -52,6 +53,7 @@ module Terrain =
         | "Marsh" -> Marsh
         | "Mountain" -> Mountain
         | "KerchStrait" -> KerchStrait
+        | "Area" -> Area
         | _ -> createCity str |> City
 
     let cost terrain (unitType: Counter.UnitType) =
@@ -59,9 +61,11 @@ module Terrain =
         | Open -> 1
         | Forest -> if unitType.isTank then 2 else 1
         | Marsh -> if unitType.isTank then 4 else 2
-        | Mountain -> if unitType.isTank then 3 else 2
-        | KerchStrait -> if unitType.isTank then 3 else 2
+        | Mountain
+        | KerchStrait
+        | Area -> if unitType.isTank then 3 else 2
         | City _ -> 1
+        
         |> ignore
         0
 
@@ -145,8 +149,8 @@ let setTower (cell: T) tower = { cell with Tower = tower }
 
 let belongsTo country (cell: T) = cell.BelongsTo country
 
-let unblockedDirections cell =
-    Coordinate.adjacentCoords cell.Coord |> Seq.except cell.BlockedSides
+let unblockedDirsFor adjacentCoords cell =
+    adjacentCoords cell.Coord |> Seq.except cell.BlockedSides
 
 let selectedCounters cell = Tower.selectedCounters cell.Tower
 
@@ -255,18 +259,19 @@ let view (state: T, MaskInfo (mask, maskParam)) (dispatch: Msg -> unit) : IView 
         | CanBeDropped -> DragDrop.onDrop (checkDragDropArgs (fun _ -> dispatch Dropped))
         | _ -> ()
 
-        HexItem.content (Tower.view state.Tower (TowerMsg >> dispatch))
+    //    HexItem.content (Tower.view state.Tower (TowerMsg >> dispatch))
+    //]
+        HexItem.content (
+            Panel.create [
+                Panel.horizontalAlignment HorizontalAlignment.Center
+                Panel.verticalAlignment VerticalAlignment.Center
+                Panel.children [
+                    TextBlock.create [
+                        TextBlock.text (sprintf "%i, %i" state.Coord.R state.Coord.C)
+                        TextBlock.fontSize 35
+                    ]
+                    Tower.view state.Tower (TowerMsg >> dispatch)
+                ]
+            ]
+        ) 
     ]
-        //HexItem.content (
-        //    Panel.create [
-        //        Panel.horizontalAlignment HorizontalAlignment.Center
-        //        Panel.verticalAlignment VerticalAlignment.Center
-        //        Panel.children [
-        //            TextBlock.create [
-        //                TextBlock.text (sprintf "%i, %i" state.Coord.R state.Coord.C)
-        //                TextBlock.fontSize 35
-        //            ]
-        //            towerView state.Tower dispatch
-        //        ]
-        //    ]
-        //) ]

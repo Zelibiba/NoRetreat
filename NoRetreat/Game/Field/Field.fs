@@ -14,11 +14,32 @@ type T =
       Mask: Cell.Mask
       MaskOptions: Map<Cell.Mask, Country option> }
 
-    member x.Item
-        with get coord = x.Cells[coord]
-        and set coord cell = x.Cells[coord] <- cell
+    member private _._linkedCoords =
+        [| (-9, 13), (-10, 12)
+           (5, -12), (3, -12)
+           (7, -11), (5, -11) |]
+        |> Array.map (Tuple.map Coordinate.create Coordinate.create)
+        |> Map
 
-    member x.get coord = x.Cells[coord]
+    member inline private x._realCoord coord =
+         Map.tryFind coord x._linkedCoords
+         |> Option.defaultValue coord
+
+    member x.Item
+        with get coord = x.Cells[x._realCoord coord]
+        and set coord cell =x.Cells[x._realCoord coord] <- cell
+
+    member x.get coord = x[coord]
+
+    member x.contains coord =
+        if x.Cells.ContainsKey(coord)
+        then true
+        else Map.containsKey coord x._linkedCoords
+
+    member x.tryFind coord =
+        match x.Cells.TryGetValue(coord) with
+        | true, cell -> Some cell
+        | false, _ -> Map.tryFind coord x._linkedCoords |> Option.map x.get
 
 module private HexData =
     open FSharp.Data
@@ -78,17 +99,21 @@ module private HexData =
         |> dict
 
 module Helpers =
-    let inline contains (field: T) coord = field.Cells.ContainsKey coord
+    let contains (field: T) coord = field.contains coord
 
-    //let inline get (field: T) coord = field[coord]
+    let tryFind (field: T) coord = field.tryFind coord
 
-    let tryFind (field: T) coord =
-        match field.Cells.TryGetValue(coord) with
-        | true, cell -> Some cell
-        | false, _ -> None
+    let adjacentCoords (coord: Coordinate) =
+        match coord.toTuple() with
+        | -10, 12 -> seq { (-8, 12); (-8, 13) }
+        | 3, -12  -> seq { (4, -11); (5, -11) }
+        | 5, -11  -> seq { (6, -10) }
+        | _, _ -> Seq.empty
+        |> Seq.map Coordinate.create 
+        |> Seq.append (Coordinate.adjacentCoords coord)
 
-    let inline unblockedDirections coord (field: T) =
-        Cell.unblockedDirections field[coord] |> Seq.filter (contains field)
+    let unblockedDirections coord (field: T) =
+        Cell.unblockedDirsFor adjacentCoords field[coord] |> Seq.filter (contains field)
 
     let inline unblockedDirsWithItself coord field =
         seq {

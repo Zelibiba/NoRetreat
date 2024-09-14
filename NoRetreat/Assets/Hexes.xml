@@ -5,6 +5,7 @@
 		<hex column="9" type="Forest" sea="Baltic">
 			<river>1,0</river>
 		</hex>
+		<hex column="12" type="Area" sea="Baltic"/>
 	</row>
 	<row value="-9">
 		<hex column="-4" type="Open" sea="Baltic" mapEdge="Germany">
@@ -752,6 +753,7 @@
 		</hex>
 	</row>
 	<row value="3">
+		<hex column="-12" type="Area" sea="Adriatic"/>
 		<hex column="-11" type="Mountain"/>
 		<hex column="-10" type="Белград">
 			<river>-1,1</river>
@@ -902,6 +904,7 @@
 		<hex column="10" type="Forest" mapEdge="USSR"/>
 	</row>
 	<row value="5">
+		<hex column="-11" type="Area" sea="Adriatic"/>
 		<hex column="-10" type="Mountain">
 			<river>-1,1</river>
 			<river>0,1</river>

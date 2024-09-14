@@ -35,7 +35,9 @@ let init () =
         |> Helpers.setCounters (-4, 0)  [| 5 |]
         |> Helpers.setCounters (-5, 0)  [| 2 |]
         |> Helpers.setCounters (-4, -1) [| 1 |]
+        |> Helpers.setCounters (-7, 11) [| 4 |]
         |> Helpers.setCounters (-4, 1)  [| 51 |]
+        |> Helpers.setCounters (-1, -2) [| 52 |]
     (field, NotSelected), Cmd.none
 
 type Msg = 

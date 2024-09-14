@@ -57,6 +57,7 @@ module private Helpers =
         Cell.ZOC.isEZOCFor country cell.ZOC && not <| cell.BelongsTo country ||
         match cell.Terrain with
         | Cell.City city -> city.Owner <> country
+        | Cell.Area -> true
         | _ -> false
 
     let isCitySupplied coord =
@@ -108,11 +109,13 @@ module private Helpers =
                 Array.empty
             else
                 visitedCoords[coord] <- true
-                Coordinate.adjacentCoords coord
-                |> Seq.choose (tryFind field)
-                |> Seq.filter (_.MapEdge >> Option.contains country >> not)
-                |> Seq.map _.Coord
-                |> Seq.toArray
+                let arr =
+                    Helpers.adjacentCoords coord
+                    |> Seq.choose (tryFind field)
+                    |> Seq.filter (_.MapEdge >> Option.contains country >> not)
+                    |> Seq.map _.Coord
+                    |> Seq.toArray
+                arr
         fun (field, visited, country) ->
             Array.fold (fun state _ ->
                 Array.collect (suppliedPathes visited field country) state)
@@ -145,14 +148,14 @@ module private Helpers =
             |> List.toArray
             |> Array.filter (field.get >> _.Supply[country])
             |> directSuppliedCells 4
-
+        
         let suppliedFromEdge =
             field.MapEdgeCoords[country]
             |> directSuppliedCells 3
-
+        
         let (<*>) = SupplyAction.apply
         let suppliedCellsCoord =
-            SupplyAction.rtrn Seq.append <*> suppliedFromCities <*> suppliedFromEdge
+            SupplyAction.rtrn Seq.append <*> suppliedFromEdge <*> suppliedFromCities
             |> SupplyAction.map Seq.distinct
             |> SupplyAction.execute country field
     
@@ -168,7 +171,7 @@ module private Helpers =
         | Some Cell.Caspian -> country = USSR
         | Some Cell.Black -> true
         | None ->
-            Coordinate.adjacentCoords coord
+            Helpers.adjacentCoords coord
             |> Seq.choose (Helpers.tryFind field)
             |> Seq.filter (Cell.belongsTo country)
             |> Seq.exists _.Supply[country]
