@@ -136,8 +136,7 @@ let update (msg: Msg) (state: T) : T =
     | ChangeExpansion ->
         deselectCounters state
         |> setIsExpanded (not state.IsExpanded)
-    | RemoveCounters ->
-        removeSelectedCounters state
+    | RemoveCounters -> removeSelectedCounters state
     | AddCounters counters ->
         addCounters counters state
         |> if state.IsExpanded then id else selectAllCounters

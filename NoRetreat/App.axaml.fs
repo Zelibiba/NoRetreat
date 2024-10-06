@@ -8,10 +8,14 @@ open Avalonia.Data.Core.Plugins
 open Avalonia.Themes.Fluent
 open Avalonia.Markup.Xaml
 open Elmish
+open Avalonia.FuncUI
 open Avalonia.FuncUI.Hosts
 open Avalonia.FuncUI.Elmish
 
-open NoRetreat.Game.Field
+
+
+
+open NoRetreat.Game
 
 type MainWindow() as this =
     inherit HostWindow()
@@ -42,6 +46,7 @@ type App() =
     override this.Initialize() =
         AvaloniaXamlLoader.Load(this)
         this.Styles.Add (FluentTheme())
+        this.Styles.Load "avares://NoRetreat/Styles/CardHandStyle.axaml"
 
     override this.OnFrameworkInitializationCompleted() =
         BindingPlugins.DataValidators.RemoveAt(0)

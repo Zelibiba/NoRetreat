@@ -155,7 +155,7 @@ module private CounterLoader =
 
           Buff = NoBuff
           
-          Selection = CanBeSelected
+          Selection = NotSelected
           IsSideSwapped = false }
 
 module private Helpers =
@@ -252,7 +252,7 @@ let update (msg: Msg) (state: T) =
 
 module private Images =
     let load =
-        Lib.memoize
+        Library.memoize
         <| fun (country: Country, unitInfo) ->
             sprintf "avares://NoRetreat/Assets/Units/%A/%s.PNG" country unitInfo.Name
             |> Bitmap.create

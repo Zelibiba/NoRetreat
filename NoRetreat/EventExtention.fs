@@ -145,13 +145,13 @@ module EventLib =
         e.GetCurrentPoint(e.Source :?> Avalonia.Visual).Properties
 
     let filterLeftButton observable =
-        Observable.filter (getProperties >> (_.IsLeftButtonPressed)) observable
+        Observable.filter (getProperties >> _.IsLeftButtonPressed) observable
 
     let filterRightButton observable =
-        Observable.filter (getProperties >> (_.IsRightButtonPressed)) observable
+        Observable.filter (getProperties >> _.IsRightButtonPressed) observable
 
     let filterMiddleButton observable =
-        Observable.filter (getProperties >> (_.IsMiddleButtonPressed)) observable
+        Observable.filter (getProperties >> _.IsMiddleButtonPressed) observable
     
     let splitByLeftButton observable =
         observable

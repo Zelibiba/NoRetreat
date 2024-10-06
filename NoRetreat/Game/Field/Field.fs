@@ -4,12 +4,19 @@ open NoRetreat.Game
 
 open System.Collections.Generic
 
+[<Struct>]
+type SelectionState =
+    | NotSelected
+    | Selected of coord: Coordinate
+    | Dragging of origCoord: Coordinate * currentCoord: Coordinate * counters: Counter.T array
+
 type T =
     { UpdateValue: bool
+      CounterSelection: SelectionState
 
       Cells: Dictionary<Coordinate, Cell.T> 
-      CityCoords: Dictionary<Country, Coordinate list>
-      MapEdgeCoords: Dictionary<Country, Coordinate array> 
+      CityCoords: Map<Country, Coordinate list>
+      MapEdgeCoords: Map<Country, Coordinate array> 
       
       Mask: Cell.Mask
       MaskOptions: Map<Cell.Mask, Country option> }
@@ -131,7 +138,7 @@ module Helpers =
             |> Seq.toList
             |> List.partition (snd >> (=) USSR)
             |> Tuple.map (List.map fst) (List.map fst)
-        let cities = [USSR, citiesUSSR; Germany, citiesGermany] |> dict |> Dictionary
+        let cities = [USSR, citiesUSSR; Germany, citiesGermany] |> Map
 
         let edgeUSSR, edgeGermany =
             dictionary.Values
@@ -142,9 +149,11 @@ module Helpers =
             |> Seq.toArray
             |> Array.partition (snd >> (=) USSR)
             |> Tuple.map (Array.map fst) (Array.map fst)
-        let mapEdges = [USSR, edgeUSSR; Germany, edgeGermany] |> dict |> Dictionary
+        let mapEdges = [USSR, edgeUSSR; Germany, edgeGermany] |> Map
 
         { UpdateValue = false
+          CounterSelection = NotSelected
+
           Cells = dictionary 
           CityCoords = cities
           MapEdgeCoords = mapEdges 
@@ -153,6 +162,8 @@ module Helpers =
           MaskOptions = [(Cell.NoMask, None);
                          (Cell.ZOCMask, None);
                          (Cell.SupplyMask, None)] |> Map }
+
+    let setSelection selection (field: T) = { field with CounterSelection = selection }
 
     let update (field: T) = { field with UpdateValue = not field.UpdateValue }
 

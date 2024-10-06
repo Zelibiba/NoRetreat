@@ -7,11 +7,11 @@ type Coordinate =
 
     member inline x.toTuple () = (x.R, x.C)
 
-    static member (+)({ R = row1; C = column1 }, { R = row2; C = column2 }) =
+    static member (+) ({ R = row1; C = column1 }, { R = row2; C = column2 }) =
         { R = row1 + row2
           C = column1 + column2 }
 
-    static member (-)({ R = row1; C = column1 }, { R = row2; C = column2 }) =
+    static member (-) ({ R = row1; C = column1 }, { R = row2; C = column2 }) =
         { R = row1 - row2
           C = column1 - column2 }
 

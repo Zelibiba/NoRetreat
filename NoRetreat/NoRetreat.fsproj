@@ -8,6 +8,12 @@
   <ItemGroup>
      <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Remove="Assets\Cards\**" />
+    <AvaloniaXaml Remove="Assets\Cards\**" />
+    <EmbeddedResource Remove="Assets\Cards\**" />
+  </ItemGroup>
 	
   <ItemGroup>
     <Content Include="Assets\Hexes.xml" />
@@ -26,6 +32,9 @@
     <Compile Include="Game\Field\Movement.fs" />
     <Compile Include="Game\Field\Supply.fs" />
     <Compile Include="Game\Field\Main.fs" />
+    <Compile Include="Game\Card.fs" />
+    <Compile Include="Game\Player.fs" />
+    <Compile Include="Game\Main.fs" />
   </ItemGroup>
 
   <ItemGroup>
