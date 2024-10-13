@@ -2,51 +2,99 @@
 open NoRetreat
 open NoRetreat.Game
 
-open System.Collections.Generic
 
 [<Struct>]
 type SelectionState =
     | NotSelected
     | Selected of coord: Coordinate
-    | Dragging of origCoord: Coordinate * currentCoord: Coordinate * counters: Counter.T array
+    | Dragging of origCoord: Coordinate * oldCoord: Coordinate * counters: Counter.T array
 
-type T =
-    { UpdateValue: bool
-      CounterSelection: SelectionState
+type T(countersSelection: SelectionState,
 
-      Cells: Dictionary<Coordinate, Cell.T> 
-      CityCoords: Map<Country, Coordinate list>
-      MapEdgeCoords: Map<Country, Coordinate array> 
-      
-      Mask: Cell.Mask
-      MaskOptions: Map<Cell.Mask, Country option> }
+       map: Map<Coordinate, Cell.T>,
+       citiesCoords: Coordinate list,
+       mapEdgesCoords: Map<Country, Coordinate list>,
 
-    member private _._linkedCoords =
+       mask: Cell.Mask,
+       maskOptions: Map<Cell.Mask, Country option>) =
+
+    static let linkedCoords =
         [| (-9, 13), (-10, 12)
            (5, -12), (3, -12)
            (7, -11), (5, -11) |]
-        |> Array.map (Tuple.map Coordinate.create Coordinate.create)
+        |> Array.map (Tuple.mapBoth Coordinate.create)
         |> Map
+    static let realCoord coord = Map.tryFind coord linkedCoords |> Option.defaultValue coord
 
-    member inline private x._realCoord coord =
-         Map.tryFind coord x._linkedCoords
-         |> Option.defaultValue coord
+    new(pairs: (Coordinate * Cell.T) array) =
+        let cities = 
+            pairs |> Array.choose (fun (coord, cell) ->
+                match cell.Terrain with
+                | Cell.Terrain.City _ -> Some coord
+                | _ -> None)
+            |> Array.toList
 
-    member x.Item
-        with get coord = x.Cells[x._realCoord coord]
-        and set coord cell =x.Cells[x._realCoord coord] <- cell
+        let edgeUSSR, edgeGermany =
+            pairs |> Array.choose (fun (coord, cell) ->
+                match cell.MapEdge with
+                | Some country -> Some (coord, country)
+                | None -> None)
+            |> Array.partition (snd >> (=) USSR)
+            |> Tuple.mapBoth (Array.map fst >> Array.toList)
+        let mapEdges = Map [USSR, edgeUSSR; Germany, edgeGermany]
 
-    member x.get coord = x[coord]
+        let maskOptions = [(Cell.NoMask, None);
+                           (Cell.ZOCMask, None);
+                           (Cell.SupplyMask, None)] |> Map
 
-    member x.contains coord =
-        if x.Cells.ContainsKey(coord)
-        then true
-        else Map.containsKey coord x._linkedCoords
+        T(NotSelected, Map pairs, cities, mapEdges, Cell.NoMask, maskOptions)
 
-    member x.tryFind coord =
-        match x.Cells.TryGetValue(coord) with
-        | true, cell -> Some cell
-        | false, _ -> Map.tryFind coord x._linkedCoords |> Option.map x.get
+    new(field: T, map, ?selection, ?citiesCoords, ?mapEdgesCoords, ?mask, ?maskOptions) =
+        let selection = defaultArg selection field.Selection
+        let citiesCoords = defaultArg citiesCoords field.CitiesCoords
+        let mapEdgesCoords = defaultArg mapEdgesCoords field.MapEdgesCoords
+        let mask = defaultArg mask field.Mask
+        let maskOptions = defaultArg maskOptions field.MaskOptions
+
+        T(selection, map, citiesCoords, mapEdgesCoords, mask, maskOptions)
+
+    static member adjacentCoords coord =
+        Map.tryFindKey (fun _ coord' -> coord' = coord) linkedCoords
+        |> Option.map Coordinate.adjacentCoords
+        |> Option.defaultValue [||]
+        |> Array.append (Coordinate.adjacentCoords coord)
+
+    member x.Item with get coord = x.getCell coord
+    member _.getCell coord = realCoord coord |> map.get_Item
+    member x.setCell coord updateCell =
+        let map' = Map.change (realCoord coord) (Option.map updateCell) map
+        T(x, map')
+
+    member x.setSelection selection = if selection = countersSelection then x else T(x, map, selection=selection)
+    member x.setMask mask' = if mask' = mask then x else T(x, map, mask=mask')
+    member x.setMaskOptions maskOptions' = if maskOptions' = maskOptions then x else T(x, map, maskOptions=maskOptions')
+
+    member _.Selection = countersSelection
+    member _.Cells = map.Values
+    member _.CitiesCoords = citiesCoords
+    member _.MapEdgesCoords = mapEdgesCoords
+    member _.Mask = mask
+    member _.MaskOptions = maskOptions
+
+    member x.CitiesCoordsOf country =
+        List.filter (x.getCell >> _.Terrain >> Cell.Terrain.getCity >> _.Owner >> (=) country) citiesCoords
+
+    member private _.contains coord =
+        Map.containsKey coord map || Map.containsKey coord linkedCoords
+    member private x.tryFind coord =
+        Map.tryFind coord map
+        |> Option.orElseWith (fun () ->
+            Map.tryFind coord linkedCoords
+            |> Option.map x.getCell)
+
+    member x.choose fCoords (coord: Coordinate) =
+        fCoords coord |> Array.choose x.tryFind
+
 
 module private HexData =
     open FSharp.Data
@@ -103,86 +151,41 @@ module private HexData =
     let hexes =
         T.Load("avares://NoRetreat/Assets/Hexes.xml" |> Stream.create).Rows
         |> Array.collect (fun row -> Array.map (createfromHex row.Value >> (fun hex -> (hex.Coord, hex))) row.Hexs)
-        |> dict
+
 
 module Helpers =
-    let contains (field: T) coord = field.contains coord
+    let setSelection selection (field: T) = field.setSelection selection
+    let setMask mask (field: T) = field.setMask mask
 
-    let tryFind (field: T) coord = field.tryFind coord
+    let adjacentCells coord (field: T) =
+        field.choose T.adjacentCoords coord
 
-    let adjacentCoords (coord: Coordinate) =
-        match coord.toTuple() with
-        | -10, 12 -> seq { (-8, 12); (-8, 13) }
-        | 3, -12  -> seq { (4, -11); (5, -11) }
-        | 5, -11  -> seq { (6, -10) }
-        | _, _ -> Seq.empty
-        |> Seq.map Coordinate.create 
-        |> Seq.append (Coordinate.adjacentCoords coord)
+    let unblockedCells coord (field: T) =
+        field.choose (field.getCell >> Cell.unblockedDirsFrom T.adjacentCoords) coord
 
-    let unblockedDirections coord (field: T) =
-        Cell.unblockedDirsFor adjacentCoords field[coord] |> Seq.filter (contains field)
+    let unblockedCellsWithItself coord field =
+        [|
+            yield! unblockedCells coord field
+            yield field[coord]
+        |]
 
-    let inline unblockedDirsWithItself coord field =
-        seq {
-            yield! unblockedDirections coord field
-            yield coord
-        }
+    let updateCell msg coord (field: T) = field.setCell coord (Cell.update msg)
+    let updateTower msg coord (field: T) = updateCell (Cell.TowerMsg msg) coord field
 
-    let create (dictionary: Dictionary<Coordinate, Cell.T>) =
-        let citiesUSSR, citiesGermany =
-            dictionary.Values
-            |> Seq.choose (fun cell ->
-                match cell.Terrain with
-                | Cell.City city -> Some (cell.Coord, city.Owner)
-                | _ -> None)
-            |> Seq.toList
-            |> List.partition (snd >> (=) USSR)
-            |> Tuple.map (List.map fst) (List.map fst)
-        let cities = [USSR, citiesUSSR; Germany, citiesGermany] |> Map
+    let updateCells msg (field: T) coords = Array.foldBack (updateCell msg) coords field
+    let updateTowers (field: T) msg coords = updateCells (Cell.TowerMsg msg) field coords
 
-        let edgeUSSR, edgeGermany =
-            dictionary.Values
-            |> Seq.choose (fun cell ->
-                match cell.MapEdge with
-                | Some country -> Some (cell.Coord, country)
-                | None -> None)
-            |> Seq.toArray
-            |> Array.partition (snd >> (=) USSR)
-            |> Tuple.map (Array.map fst) (Array.map fst)
-        let mapEdges = [USSR, edgeUSSR; Germany, edgeGermany] |> Map
+    let private changeZOC quantity country coord (field: T) =
+        unblockedCellsWithItself coord field |> Array.map _.Coord
+        |> updateCells (Cell.ChangeZOC (country, quantity)) field
 
-        { UpdateValue = false
-          CounterSelection = NotSelected
-
-          Cells = dictionary 
-          CityCoords = cities
-          MapEdgeCoords = mapEdges 
-          
-          Mask = Cell.NoMask
-          MaskOptions = [(Cell.NoMask, None);
-                         (Cell.ZOCMask, None);
-                         (Cell.SupplyMask, None)] |> Map }
-
-    let setSelection selection (field: T) = { field with CounterSelection = selection }
-
-    let update (field: T) = { field with UpdateValue = not field.UpdateValue }
-
-    let updateCell msg coord (field: T) =
-        field[coord] <- Cell.update msg field[coord]
-        field
-
-    let updateCellAt (field: T) msg coord =
-        field[coord] <- Cell.update msg field[coord]
-
-    let updateTowerAt (field: T) msg coord =
-        field[coord] <- Cell.updateTower msg field[coord]
+    let addZOC quantity = changeZOC quantity
+    let subZOC quantity = changeZOC -quantity
 
     let setCounters rawCoord idxs (field: T) =
         let coord = Coordinate.create rawCoord
-        let counters = Array.map Counter.init idxs
+        let counters = Array.map (Counter.init <| Some coord) idxs
         let owner = counters[0].Country
 
-        field[coord] <- Tower.init counters |> Cell.setTower field[coord]
-        unblockedDirsWithItself coord field 
-        |> Seq.iter (updateCellAt field <| Cell.AddZOC (owner, counters.Length))
-        field
+        updateCell (Cell.TowerMsg <| Tower.Init counters) coord field
+        |> addZOC counters.Length owner coord

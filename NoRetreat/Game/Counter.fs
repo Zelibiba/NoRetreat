@@ -77,14 +77,17 @@ type Side =
 
 [<Struct>]
 type Movement = 
-    { Current: int
+    { Full: int
       Remained: int 
       History: Coordinate list }
 
-    static member create movementPoints =
-        { Current = movementPoints
+    static member create movementPoints coordOpt =
+        let history = 
+            Option.map List.singleton coordOpt
+            |> Option.defaultValue []
+        { Full = movementPoints
           Remained = movementPoints
-          History = [] }
+          History = history }
 
 [<Struct>]
 type Buff =
@@ -105,7 +108,7 @@ type T =
     member x.IsSelected = x.Selection = Selected
     member private x.unboxedCurrentSide = Side.unbox x.CurrentSide
     member x.Type =  x.unboxedCurrentSide.Type
-    member x.MovedFrom = List.tryHead x.Movement.History
+    member x.MovedFrom = List.tryItem 1 x.Movement.History
 
 module private CounterLoader =
     type private T =
@@ -144,18 +147,18 @@ module private CounterLoader =
               Type = AttackType.fromString side.Strength.Type }
           MP = side.Movement }
 
-    let createCounter id =
+    let createCounter currentCoordOpt id =
         let unit = Array.find (fun (un: T.Unit) -> un.Id = id) data
         let fullSide = createSide unit.Sides[0]
 
         { CurrentSide = FullSide fullSide
           OtherSide = createSide unit.Sides[1] |> HalfSide
-          Movement = Movement.create fullSide.MP 
+          Movement = Movement.create fullSide.MP currentCoordOpt
           Country = Country.fromString unit.Country
 
           Buff = NoBuff
           
-          Selection = NotSelected
+          Selection = CanBeSelected
           IsSideSwapped = false }
 
 module private Helpers =
@@ -164,23 +167,13 @@ module private Helpers =
             CurrentSide = counter.OtherSide
             OtherSide = counter.CurrentSide }
 
-let moveForward currentCoord cost counter =
-    { counter.Movement with 
-        Remained = counter.Movement.Remained - cost currentCoord counter.Type
-        History = [currentCoord] @ counter.Movement.History }
-
-let moveBackward cost counter =
-    { counter.Movement with 
-        Remained = counter.Movement.Remained + cost counter.Movement.History[0] counter.Type
-        History = counter.Movement.History[1..] }
-
 let init = CounterLoader.createCounter
 
 type Msg =
     | ChangeSelection of add: bool
     | Flip of back: bool
     | BeginDrag of PointerEventArgs
-    | MoveCounter of (T -> Movement)
+    | MoveCounter of cost: (Coordinate -> UnitType -> int) * newCoord: Coordinate
     | SetSupply of bool
 
 let update (msg: Msg) (state: T) =
@@ -192,63 +185,20 @@ let update (msg: Msg) (state: T) =
             | Selected -> { state with Selection = CanBeSelected }
     | Flip back -> { state with IsSideSwapped = not back } |> Helpers.swapSides
     | BeginDrag _ -> state
-    | MoveCounter updateUnit -> { state with Movement = updateUnit state }
+    | MoveCounter (cost, nextCoord) ->
+        let movement = state.Movement
+        let movementCost = cost nextCoord state.Type
+        let movement' =
+            if Option.contains nextCoord state.MovedFrom then
+                { movement with
+                    Remained = movement.Remained + movementCost 
+                    History = movement.History.Tail }
+            else
+                { movement with
+                    Remained = movement.Remained - movementCost
+                    History = nextCoord :: movement.History }
+        { state with Movement = movement' }
     | SetSupply isSupplied -> { state with Buff = if isSupplied then NoBuff else OutOfSupply }
-
-//let iconView unitType : IView =
-//    let height = 20.
-//    let width = 30.
-//    let thickness = 2.
-//    Panel.create [
-//        Panel.dock Dock.Top
-//        Panel.height height
-//        Panel.width width
-//        Panel.children [
-//            Rectangle.create [
-//                    Rectangle.horizontalAlignment HorizontalAlignment.Stretch
-//                    Rectangle.verticalAlignment VerticalAlignment.Stretch
-//                    Rectangle.fill "#CEDFD6"
-//                    Rectangle.stroke "Black"
-//                    Rectangle.strokeThickness thickness
-//                ]
-//            match unitType with
-//            | Infratry ->
-//                Line.create [
-//                    Line.startPoint (thickness, thickness)
-//                    Line.endPoint (width - thickness, height - thickness)
-//                    Line.stroke "Black"
-//                    Line.strokeThickness thickness
-//                ]
-//                Line.create [
-//                    Line.startPoint (width - thickness, thickness)
-//                    Line.endPoint (thickness, height - thickness)
-//                    Line.stroke "Black"
-//                    Line.strokeThickness thickness
-//                ]
-//            | _ -> TextBlock.create [ TextBlock.text "UnitType not found" ]
-//        ]
-//    ]
-//
-//let unitView (unit: UnitInfo) (dispatch: Msg -> unit) : IView =
-//    DockPanel.create [
-//        DockPanel.horizontalAlignment HorizontalAlignment.Center
-//        DockPanel.verticalAlignment VerticalAlignment.Stretch
-//        DockPanel.margin 5
-//        DockPanel.children [
-//            TextBlock.create [
-//                TextBlock.dock Dock.Top
-//                TextBlock.text unit.Name
-//                TextBlock.fontSize 10
-//            ]
-//            iconView unit.Type
-//            StackPanel.create [
-//                StackPanel.dock Dock.Bottom
-//                StackPanel.orientation Orientation.Horizontal
-//                StackPanel.children [
-//                ]
-//            ]
-//        ]
-//    ]
 
 module private Images =
     let load =

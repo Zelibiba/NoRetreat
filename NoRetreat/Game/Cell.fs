@@ -16,17 +16,17 @@ type City =
       Motherland: Country
       Owner: Country }
 
-[<Struct>]
-type Terrain =
-    | Open
-    | Forest
-    | Marsh
-    | Mountain
-    | KerchStrait
-    | City of City
-    | Area
-
 module Terrain =
+    [<Struct>]
+    type T =
+        | Open
+        | Forest
+        | Marsh
+        | Mountain
+        | KerchStrait
+        | City of City
+        | Area
+
     let private createCity name =
         let country = 
             match name with
@@ -66,8 +66,8 @@ module Terrain =
         | Area -> if unitType.isTank then 3 else 2
         | City _ -> 1
         
-        |> ignore
-        0
+        //|> ignore
+        //0
 
     let getCity = function
         | City city -> city
@@ -88,30 +88,27 @@ type Sea =
         | "Caspian" -> Caspian
         | _ -> failwithf "Can't parse to Sea: %s" str
 
-[<Struct>]
-type ZOC = { SumUSSR: int; SumGermany: int }
-
 module ZOC =
+    [<Struct>]
+    type T = private { SumUSSR: int; SumGermany: int }
+
     let empty = { SumGermany = 0; SumUSSR = 0 }
 
-    let isEZOCFor country (zoc: ZOC) =
+    let isZOCOf country (zoc: T) =
+        match country with
+        | USSR -> zoc.SumUSSR > 0
+        | Germany -> zoc.SumGermany > 0
+
+    let isEZOCFor country (zoc: T) =
         match country with
         | USSR -> zoc.SumGermany > 0
         | Germany -> zoc.SumUSSR > 0
 
-    let add country quantity (zoc: ZOC) =
+    let change quantity country (zoc: T) =
         match country with
         | USSR -> { zoc with SumUSSR = zoc.SumUSSR + quantity }
-        | Germany ->
-            { zoc with
-                SumGermany = zoc.SumGermany + quantity }
+        | Germany -> { zoc with SumGermany = zoc.SumGermany + quantity}
 
-    let sub country quantity (zoc: ZOC) =
-        match country with
-        | USSR -> { zoc with SumUSSR = zoc.SumUSSR - quantity }
-        | Germany ->
-            { zoc with
-                SumGermany = zoc.SumGermany - quantity }
 
 [<Struct>]
 type Selection =
@@ -122,19 +119,18 @@ type Selection =
 
 type T =
     { Coord: Coordinate
-      Terrain: Terrain
+      Terrain: Terrain.T
       Rivers: Coordinate array
       Sea: Sea option
       BlockedSides: Coordinate array
       MapEdge: Country option
 
       Tower: Tower.T
-      ZOC: ZOC
+      ZOC: ZOC.T
       Supply: Map<Country, bool>
       Selection: Selection }
 
-      member x.Owner = x.Tower.Owner
-      member x.BelongsTo country = Option.contains country x.Owner
+      member x.belongsTo country = Option.contains country x.Tower.Owner
 
 [<Struct>]
 type Mask =
@@ -145,49 +141,42 @@ type Mask =
 [<Struct>]
 type MaskInfo = MaskInfo of Mask * Country option
 
-let setTower (cell: T) tower = { cell with Tower = tower }
+let belongsTo country (cell: T) = cell.belongsTo country
 
-let belongsTo country (cell: T) = cell.BelongsTo country
-
-let unblockedDirsFor adjacentCoords cell =
-    adjacentCoords cell.Coord |> Seq.except cell.BlockedSides
+let unblockedDirsFrom adjacentCoords cell =
+    adjacentCoords cell.Coord |> Array.except cell.BlockedSides
 
 let selectedCounters cell = Tower.selectedCounters cell.Tower
 
 let getMovementSelection cell (counter: Counter.T) =
-    match counter.MovedFrom with
-    | Some coord when coord = cell.Coord -> MovedFrom
-    | _ -> 
-        if Terrain.cost cell.Terrain counter.Type <= counter.Movement.Remained
-        then CanMoveTo
-        else NotSelected
+    if Option.contains cell.Coord counter.MovedFrom then
+        MovedFrom
+    else if Terrain.cost cell.Terrain counter.Type <= counter.Movement.Remained then 
+        CanMoveTo
+    else
+        NotSelected
+
 
 type Msg =
     | TowerMsg of Tower.Msg
     | DragEntered
     | Dropped
-    | AddZOC of Country * int
-    | SubZOC of Country * int
+    | ChangeZOC of Country * int
     | SetSelection of Selection
     | SetSupply of Country * bool
 
 let update (msg: Msg) (state: T) : T =
     match msg with
     | TowerMsg towerMsg -> 
-        Tower.update towerMsg state.Tower
-        |> setTower state
+        { state with Tower = Tower.update towerMsg state.Tower }
     | DragEntered
     | Dropped -> state
-    | AddZOC (country, quantity) ->
-        { state with
-            ZOC = ZOC.add country quantity state.ZOC }
-    | SubZOC (country, quantity) ->
-        { state with
-            ZOC = ZOC.sub country quantity state.ZOC }
+    | ChangeZOC (country, quantity) ->
+        { state with ZOC = ZOC.change quantity country state.ZOC }
     | SetSelection selection -> { state with Selection = selection }
     | SetSupply (country, isSupplied) ->
-        let supply = Map.add country isSupplied state.Supply
-        { state with Supply = supply }
+        { state with Supply = Map.add country isSupplied state.Supply }
+
 
 let updateTower msg state =
     update (TowerMsg msg) state
@@ -197,18 +186,20 @@ let private backgroundSelection = function
     | MovedFrom -> "red"
     | _ -> "transparent"
 
-let private backgroundZOCFor countryOpt (zoc: ZOC) =
-    if zoc.SumUSSR > 0 && zoc.SumGermany > 0 then
-        match countryOpt with
-        | Some USSR -> "red"
-        | Some Germany -> "gray"
-        | None -> "blue"
-    else if zoc.SumUSSR > 0 && not <| Option.contains Germany countryOpt then
-        "red"
-    else if zoc.SumGermany > 0 && not <| Option.contains USSR countryOpt then
-        "gray"
-    else
-        "transparent"
+let private backgroundZOCFor countryOpt (zoc: ZOC.T) =
+    match countryOpt with
+    | Some USSR ->
+        if ZOC.isZOCOf USSR zoc
+        then "red"
+        else "transparent"
+    | Some Germany ->
+        if ZOC.isZOCOf Germany zoc
+        then "gray"
+        else "transparent"
+    | None ->
+        if ZOC.isZOCOf USSR zoc && ZOC.isZOCOf Germany zoc
+        then "blue"
+        else " transparent"
 
 let private backgroundSupply countryOpt (supply: Map<Country, bool>) =
     if supply[USSR] && supply[Germany] then
@@ -225,10 +216,8 @@ let private backgroundSupply countryOpt (supply: Map<Country, bool>) =
 
 let view (state: T, MaskInfo (mask, maskParam)) (dispatch: Msg -> unit) : IView =
     let radius = 92.2
-
     let computeX coord =
         1.73205080756 * radius * (float coord.C + (float coord.R) / 2.) + 2113.
-
     let computeY coord = 1.5 * radius * (float coord.R) + 1601.
 
     let checkDragDropArgs onSuccess (args: DragEventArgs) =
@@ -249,15 +238,13 @@ let view (state: T, MaskInfo (mask, maskParam)) (dispatch: Msg -> unit) : IView 
         //HexItem.borderThickness 1
         //HexItem.borderBrush "red"
         HexItem.clipToBounds false
-        if not <| Array.isEmpty state.Tower.SelectedIDs then
+        if not <| Array.isEmpty state.Tower.SelectedIdxs then
             HexItem.zIndex 1
 
-        match state.Selection with
-        | NotSelected -> ()
-        | _ -> DragDrop.onDragEnter (checkDragDropArgs (fun _ -> dispatch DragEntered))
-        match state.Selection with
-        | CanBeDropped -> DragDrop.onDrop (checkDragDropArgs (fun _ -> dispatch Dropped))
-        | _ -> ()
+        if state.Selection <> NotSelected then
+            DragDrop.onDragEnter (checkDragDropArgs (fun _ -> dispatch DragEntered))
+        if state.Selection = CanBeDropped then
+            DragDrop.onDrop (checkDragDropArgs (fun _ -> dispatch Dropped))
 
     //    HexItem.content (Tower.view state.Tower (TowerMsg >> dispatch))
     //]

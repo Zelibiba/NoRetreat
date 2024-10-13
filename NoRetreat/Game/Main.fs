@@ -13,6 +13,7 @@ type T =
       CardDeck: CardDeck.T
 
       Phase: Phase
+      CanSwitchToNextPhase: bool
 
       Player: Player.T
       Enemy: Player.T }
@@ -24,13 +25,22 @@ type Msg =
 
 module Main =
 
+    let toNextPhase (game: T) =
+        let player' = Player.deselectCards game.Player
+        let phase' = game.Phase.Next
+        { game with 
+            Player = player'
+            Phase = phase'
+            CanSwitchToNextPhase = Phase.canSwitchToNext phase'}
+
     let init () =
-        let cards, cardDeck = List.mapFold (fun deck _ -> CardDeck.draw deck) (CardDeck.create ()) [1..4]
+        let cards, cardDeck = CardDeck.create () |> CardDeck.drawMany 4
 
         { Field = Field.Main.init () |> fst
           CardDeck = cardDeck
 
-          Phase = CardsPhase_Discard
+          Phase = CardsPhase true
+          CanSwitchToNextPhase = false
 
           Player = Player.create Germany cards
           Enemy = Player.create USSR [] }, Cmd.none
@@ -39,22 +49,25 @@ module Main =
     let update (msg: Msg) (state: T) =
         match msg with
         | NextPhase -> 
-            let player' = Player.deselectCards state.Player
-            { state with Player = player'; Phase = state.Phase.Next }, Cmd.none
+            let state' = toNextPhase state
+            state', Cmd.none
         | FieldMsg fieldMsg ->
             let field, cmd = Field.Main.update fieldMsg state.Field
         
-            { state with Field = field }, Cmd.map FieldMsg cmd
+            { state with Field = field; }, Cmd.map FieldMsg cmd
         | CardMsg (idx, Card.Play)
-        | CardMsg (idx, Card.Discard) when state.Phase = CardsPhase_Discard ->
-            let player', card = Player.deleteCard state.Player idx
-            let deck' = CardDeck.discard state.CardDeck card
-            let cmd =
-                if player'.Cards.Length > 2 
-                then Cmd.none
-                else Cmd.batch [Cmd.ofMsg NextPhase; Cmd.ofMsg NextPhase]
+        | CardMsg (idx, Card.Discard) when state.Phase = CardsPhase true ->
+            let player, card = Player.deleteCard state.Player idx
+            let deck = CardDeck.discard card state.CardDeck
+            let player', deck', definePhase =
+                if player.Cards.Length > 2 then
+                    player, deck, id
+                else
+                    let cards, deck' = CardDeck.drawMany 4 deck
+                    let player' = Player.addCards player cards
+                    player', deck', toNextPhase
 
-            { state with Player = player'; CardDeck = deck' }, cmd
+            definePhase { state with Player = player'; CardDeck = deck' }, Cmd.none
         | CardMsg (idx, cardMsg) ->
             let player' = Player.updateCard cardMsg state.Player idx
             { state with Player = player' }, Cmd.none
@@ -65,7 +78,51 @@ module Main =
 
         Panel.create [
             Panel.children [
-                Field.Main.view (state.Field, state.Phase) (FieldMsg >> dispatch)
+                DockPanel.create [
+                    DockPanel.children [
+                        DockPanel.create [
+                            DockPanel.dock Dock.Top
+                            DockPanel.lastChildFill false
+                            DockPanel.height 30
+                            DockPanel.children [
+                                Border.create [
+                                    Border.dock Dock.Left
+                                    Border.width 200
+                                    Border.borderBrush "black"
+                                    Border.borderThickness 1
+                                    Border.child (TextBlock.create [
+                                        TextBlock.horizontalAlignment HorizontalAlignment.Center
+                                        TextBlock.verticalAlignment VerticalAlignment.Center
+                                        TextBlock.text <| sprintf "%A" state.Phase
+                                    ])
+                                ]
+                                Border.create [
+                                    Border.dock Dock.Left
+                                    Border.height 30
+                                    Border.borderBrush "black"
+                                    Border.borderThickness 1
+                                    Border.child (Button.create [
+                                        Button.content "|>"
+                                        Button.isEnabled state.CanSwitchToNextPhase
+                                        Button.onClick (fun _ -> dispatch NextPhase)
+                                    ])
+                                ]
+                                Border.create [
+                                    Border.dock Dock.Right
+                                    Border.padding (3, 0, 0, 3)
+                                    Border.borderBrush "black"
+                                    Border.borderThickness 1
+                                    Border.child (TextBlock.create [
+                                        TextBlock.horizontalAlignment HorizontalAlignment.Center
+                                        TextBlock.verticalAlignment VerticalAlignment.Center
+                                        TextBlock.text <| sprintf "DrawPile: %i, DiscardPile: %i" state.CardDeck.DrawPile.Length state.CardDeck.DiscardPile.Length
+                                    ])
+                                ]
+                            ]
+                        ]
+                        Field.Main.view state.Field (FieldMsg >> dispatch)
+                    ]
+                ]
 
                 StackPanel.create [
                     StackPanel.height 200

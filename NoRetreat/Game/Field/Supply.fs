@@ -1,7 +1,6 @@
 ﻿module NoRetreat.Game.Field.Supply
 open NoRetreat
 open NoRetreat.Game
-open Helpers
 
 open System.Collections.Generic
 
@@ -43,148 +42,125 @@ module private SupplyAction =
         List.foldBack folder list init
 
 module private Helpers =
-    let supplyCoordsUSSR =
-        [ (0, 1); (1, 0); (-1, 1) ]
-        |> List.map Coordinate.create
-        |> List.toSeq
+    module private AdjacentCells =
+        let private supplyCoordsUSSR = Array.map Coordinate.create [| (0, 1); (1, 0); (-1, 1) |]
+        let private supplyCoordsGermany = Array.map Coordinate.create [| (0, -1); (1, -1); (-1, 0) |]
+        
+        let For country (field: T) =
+            match country with
+            | USSR -> supplyCoordsUSSR
+            | Germany -> supplyCoordsGermany
+            |> fun patternCoords coord -> Array.map ((+) coord) patternCoords
+            |> field.choose
 
-    let supplyCoordsGermany =
-        [ (0, -1); (1, -1); (-1, 0) ]
-        |> List.map Coordinate.create
-        |> List.toSeq
-
-    let can'tBePath country (cell: Cell.T) =
-        Cell.ZOC.isEZOCFor country cell.ZOC && not <| cell.BelongsTo country ||
+    let can'tBePathFor country (cell: Cell.T) =
+        Cell.ZOC.isEZOCFor country cell.ZOC && not <| cell.belongsTo country ||
         match cell.Terrain with
-        | Cell.City city -> city.Owner <> country
-        | Cell.Area -> true
+        | Cell.Terrain.City city -> city.Owner <> country
+        | Cell.Terrain.Area -> true
         | _ -> false
 
-    let isCitySupplied coord =
-        let rec isSupplied 
-            (visitedCoords: Dictionary<Coordinate, bool>)
-            (field: T)
-            country 
-            (neighbours: Coordinate -> Coordinate seq)
-            coord =
-            match visitedCoords.TryGetValue(coord) with
-            | true, value -> value
-            | false, _ ->
-                let cell = field[coord]
+    let isCitySupplied cityCoord =
+        SupplyAction <| fun (field, visitedCoords: Dictionary<Coordinate, bool>, country) ->
+            let adjacentCells = AdjacentCells.For country field
 
-                if can'tBePath country cell then
+            let rec isCellCorrect (cell: Cell.T) =
+                let coord = cell.Coord
+                match visitedCoords.TryGetValue(coord) with
+                | true, value -> value
+                | false, _ ->
+                    if can'tBePathFor country cell then
+                        visitedCoords[coord] <- false
+                    else if Option.contains country cell.MapEdge then
+                        visitedCoords[coord] <- true
+                    else
+                        visitedCoords[coord] <- adjacentCells coord |> Seq.exists isCellCorrect
+                
+                    visitedCoords[coord]
+
+            adjacentCells cityCoord
+            |> Seq.exists isCellCorrect
+
+    let directSuppliedCells pathLength sourceCoords =
+        SupplyAction <| fun (field, visitedCoords, country) ->
+            let suppliedPathes (cell: Cell.T) =
+                let coord = cell.Coord
+                if can'tBePathFor country cell then
                     visitedCoords[coord] <- false
-                    false
-                else if Option.contains country cell.MapEdge then
-                    visitedCoords[coord] <- true
-                    true
+                    Array.empty
                 else
-                    visitedCoords[coord] <- false
+                    visitedCoords[coord] <- true
 
-                    let result =
-                        neighbours coord
-                        |> Seq.exists (isSupplied visitedCoords field country neighbours)
-                    visitedCoords[coord] <- result
-                    result
+                    Helpers.adjacentCells coord field
+                    |> Array.filter (_.Coord >> visitedCoords.ContainsKey >> not)
 
-        fun (field, visited, country) ->
-            let neighbours =
-                match country with
-                | USSR -> fun coord -> Seq.map ((+) coord) supplyCoordsUSSR
-                | Germany -> fun coord -> Seq.map ((+) coord) supplyCoordsGermany
-                >> Seq.filter (contains field)
+            Array.iter (fun coord -> visitedCoords[coord] <- true) sourceCoords
+            let sourceCells = Array.map field.getCell sourceCoords
 
-            neighbours coord
-            |> Seq.exists (isSupplied visited field country neighbours)
-        |> SupplyAction
-
-    let directSuppliedCells pathLength coords =
-        let suppliedPathes
-            (visitedCoords: Dictionary<Coordinate, bool>)
-            (field: T) country coord =
-            if visitedCoords.ContainsKey(coord) then
-                Array.empty
-            else if can'tBePath country field[coord] then
-                visitedCoords[coord] <- false
-                Array.empty
-            else
-                visitedCoords[coord] <- true
-                let arr =
-                    Helpers.adjacentCoords coord
-                    |> Seq.choose (tryFind field)
-                    |> Seq.filter (_.MapEdge >> Option.contains country >> not)
-                    |> Seq.map _.Coord
-                    |> Seq.toArray
-                arr
-        fun (field, visited, country) ->
-            Array.fold (fun state _ ->
-                Array.collect (suppliedPathes visited field country) state)
-                coords [| 0..pathLength |] |> ignore
-
+            Array.fold (fun state _ -> Array.collect suppliedPathes state) sourceCells [| 0..pathLength |] |> ignore
+            
             let enemyCountry = country.Opposite
-        
-            visited.Keys
-            |> Seq.filter (field.get >> Cell.belongsTo enemyCountry >> not)
-        |> SupplyAction
+            visitedCoords.Keys |> Seq.toArray
+            |> Array.filter visitedCoords.get_Item
+            |> Array.filter (field.getCell >> Cell.belongsTo enemyCountry >> not)
 
-    let defineCitiesSupply (country, field) cities =
+    let defineCitiesSupply country field citiesCoords =
         let supplies =
-            SupplyAction.traverse isCitySupplied cities
+            SupplyAction.traverse isCitySupplied citiesCoords
             |> SupplyAction.execute country field
-            |> Seq.map (fun isSupplied -> (country, isSupplied))
+            |> List.map (fun isSupplied -> (country, isSupplied))
 
-        Seq.iter2 (fun coord supply ->
-            Helpers.updateCellAt field (Cell.SetSupply supply) coord)
-            cities supplies
+        List.foldBack2 (Cell.SetSupply >> Helpers.updateCell) supplies citiesCoords field
 
-        (country, field)
+    let defineAllCitiesSupply country field = defineCitiesSupply country field field.CitiesCoords
 
-    let defineAllCitiesSupply (country, field) =
-        defineCitiesSupply (country, field) field.CityCoords[country]
-
-    let defineCellsSupply (country, field) =
+    let defineCellsSupply country (field: T) =
         let suppliedFromCities =
-            field.CityCoords[country]
+            field.CitiesCoordsOf country
             |> List.toArray
-            |> Array.filter (field.get >> _.Supply[country])
+            |> Array.filter (field.getCell >> _.Supply[country])
             |> directSuppliedCells 4
         
         let suppliedFromEdge =
-            field.MapEdgeCoords[country]
+            field.MapEdgesCoords[country]
+            |> List.toArray
             |> directSuppliedCells 3
         
         let (<*>) = SupplyAction.apply
         let suppliedCellsCoord =
-            SupplyAction.rtrn Seq.append <*> suppliedFromEdge <*> suppliedFromCities
-            |> SupplyAction.map Seq.distinct
+            SupplyAction.rtrn Array.append <*> suppliedFromEdge <*> suppliedFromCities
             |> SupplyAction.execute country field
-    
-        field.Cells.Keys
-        |> Seq.iter (updateCellAt field (Cell.SetSupply (country, false)))
 
-        Seq.iter (updateCellAt field (Cell.SetSupply (country, true))) suppliedCellsCoord
+        let field' =
+            field.Cells |> Seq.toArray
+            |> Array.map _.Coord
+            |> Helpers.updateCells (Cell.SetSupply (country, false)) field
 
-    let checkAlterSupply (field: T) country coord =
+        Helpers.updateCells (Cell.SetSupply (country, true)) field' suppliedCellsCoord
+
+    let checkAlterSupply country (field: T) coord =
         match field[coord].Sea with
         | Some Cell.Baltic
         | Some Cell.Adriatic -> country = Germany
         | Some Cell.Caspian -> country = USSR
         | Some Cell.Black -> true
         | None ->
-            Helpers.adjacentCoords coord
-            |> Seq.choose (Helpers.tryFind field)
+            Helpers.adjacentCells coord field
             |> Seq.filter (Cell.belongsTo country)
             |> Seq.exists _.Supply[country]
 
 open Helpers
 
 let calculateDirectSupply field country =
-    defineAllCitiesSupply (country, field)
-    |> defineCellsSupply
+    defineAllCitiesSupply country field
+    |> defineCellsSupply country
 
 let defineUnitsSupply (field: T) country =
-    field.Cells.Values
-    |> Seq.filter (Cell.belongsTo country)
-    |> Seq.tuple (fun cell -> cell.Supply[country] || (checkAlterSupply field country cell.Coord))
-    |> Seq.iter (fun (cell, isSupplied) ->
-        Helpers.updateTowerAt field (Tower.UpdateAllCounters <| Counter.SetSupply isSupplied) cell.Coord)
+    let cellsWithUnits = 
+        field.Cells |> Seq.toArray
+        |> Array.filter (Cell.belongsTo country)
+    let cellsCoords = cellsWithUnits |> Array.map _.Coord
+
+    cellsWithUnits
+    |> Array.map (fun cell -> cell.Supply[country] || (checkAlterSupply country field cell.Coord))
+    |> Array.foldBack2 (Counter.SetSupply >> Tower.UpdateAllCounters >> Helpers.updateTower) <| cellsCoords <| field

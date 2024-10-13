@@ -24,12 +24,15 @@ type Selection =
 
 [<Struct>]
 type Phase =
-    | CardsPhase_Discard
-    | CardsPhase_Draw
+    | CardsPhase of discard: bool
     | SupplyPhase
 
     member x.Next =
         match x with
-        | CardsPhase_Discard -> CardsPhase_Draw
-        | CardsPhase_Draw -> SupplyPhase
+        | CardsPhase true -> CardsPhase false
+        | CardsPhase false -> SupplyPhase
         | SupplyPhase -> x
+
+    static member canSwitchToNext = function
+        | CardsPhase discard -> not discard
+        | SupplyPhase -> true

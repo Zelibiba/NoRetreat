@@ -91,8 +91,18 @@ module CardDeck =
           DiscardPile = [] }
 
     let draw (cardDeck: T) =
+        let cardDeck = 
+            if cardDeck.DrawPile.Length > 1 then
+                cardDeck
+            else
+                let cards = cardDeck.DrawPile @ cardDeck.DiscardPile |> shuffle
+                { DrawPile = cards; DiscardPile = [] }
+
         Card.init cardDeck.DrawPile[0],
         { cardDeck with DrawPile = cardDeck.DrawPile.Tail }
 
-    let discard (cardDeck: T) (card: Card.T) =
+    let drawMany count (cardDeck: T) =
+        List.mapFold (fun deck _ -> draw deck) cardDeck [1..count]
+
+    let discard (card: Card.T) (cardDeck: T) =
         { cardDeck with DiscardPile = card.ID :: cardDeck.DiscardPile }

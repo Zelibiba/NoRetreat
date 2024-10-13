@@ -1,11 +1,10 @@
 ﻿namespace NoRetreat.Game
+open NoRetreat
 
 [<Struct>]
 type Coordinate =
     { R: int
       C: int }
-
-    member inline x.toTuple () = (x.R, x.C)
 
     static member (+) ({ R = row1; C = column1 }, { R = row2; C = column2 }) =
         { R = row1 + row2
@@ -27,9 +26,8 @@ module Coordinate =
             | _ -> failwithf "Can't parse to Coordinates: %s" str
 
     let private adjacentCoordsPattern =
-        [ (1, -1); (0, -1); (1, 0); (-1, 1); (0, 1); (-1, 0) ]
-        |> List.map create
-        |> List.toSeq
+        [| (1, -1); (0, -1); (1, 0); (-1, 1); (0, 1); (-1, 0) |]
+        |> Array.map create
 
     let adjacentCoords coord =
-        Seq.map ((+) coord) adjacentCoordsPattern
+        Array.map ((+) coord) adjacentCoordsPattern

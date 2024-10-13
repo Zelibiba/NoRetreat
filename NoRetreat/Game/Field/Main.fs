@@ -3,7 +3,7 @@ open NoRetreat
 open NoRetreat.Game
 open NoRetreat.Game.Field
 
-#nowarn "25"
+//#nowarn "25"
 
 open Elmish
 open System.Collections.Generic
@@ -31,8 +31,7 @@ module Main =
     let init () =
         let field =
             HexData.hexes
-            |> Dictionary
-            |> Helpers.create
+            |> T
             |> Helpers.setCounters (-4, 0)  [| 5 |]
             |> Helpers.setCounters (-5, 0)  [| 2; 1 |]
             //|> Helpers.setCounters (-4, -1) [| 1 |]
@@ -50,14 +49,11 @@ module Main =
         }
 
     let update (msg: Msg) (state: T) =
-        match msg, state.CounterSelection with
+        match msg, state.Selection with
         | CellMsg(coord, Cell.TowerMsg(Tower.CounterMsg(_, Counter.BeginDrag e))), Selected _ ->
             let counters = Cell.selectedCounters state[coord]
 
-            match state.Mask with
-            | Cell.NoMask -> state
-            | _ -> { state with Mask = Cell.NoMask }
-            |> Helpers.updateCell (Cell.SetSelection Cell.CanBeDropped) coord
+            state.setMask Cell.NoMask
             |> Movement.defineMovements coord counters
             |> Helpers.setSelection (Dragging (coord, coord, counters)),
 
@@ -67,49 +63,42 @@ module Main =
             |> Helpers.setSelection (Selected coord), Cmd.none
         | CellMsg(coord, Cell.DragEntered),
           Dragging (origCoord, oldCoord, counters) when oldCoord <> coord ->
-            let cost = state.get >> _.Terrain >> Cell.Terrain.cost 
-            let move (counter: Counter.T) =
-                if Option.contains coord counter.MovedFrom
-                then Counter.moveBackward
-                else Counter.moveForward oldCoord
-                <| cost <| counter
-            let counters' = Array.map (move |> Counter.MoveCounter |> Counter.update) counters
+            let cost = state.getCell >> _.Terrain >> Cell.Terrain.cost
+            let counters' = Array.map (Counter.update <| Counter.MoveCounter (cost, coord)) counters
 
             Movement.clearCellsSelection oldCoord state
             |> Movement.defineMovements coord counters'
-            |> Helpers.updateCell (Cell.SetSelection Cell.CanBeDropped) coord
             |> Helpers.setSelection (Dragging (origCoord, coord, counters')), Cmd.none
         | CellMsg(coord, Cell.Dropped),
           Dragging (oldCoord, _, counters) when oldCoord <> coord ->
             Movement.removeCounters oldCoord state
-            |> Movement.addCounters coord counters
-            |> Helpers.update, Cmd.none
+            |> Movement.addCounters coord counters, Cmd.none
         | CellMsg(coord, cellMsg), _ ->
-            let state' = Helpers.updateCell cellMsg coord state |> Helpers.update
+            let state' = Helpers.updateCell cellMsg coord state
 
             (match cellMsg with
-            | Cell.TowerMsg (Tower.CounterMsg(_, Counter.ChangeSelection _))
-            | Cell.TowerMsg (Tower.AddCounters _)
-            | Cell.TowerMsg (Tower.LiftCounter _) ->
-                match state.CounterSelection with
-                | Selected loc when loc <> coord ->
-                    Helpers.updateTowerAt state' (Tower.DeselectCounters) loc
-                | _ -> ()
-
-                state
-                |> Helpers.setSelection (
-                    if Array.isEmpty state'[coord].Tower.SelectedIDs
+            | Cell.TowerMsg (Tower.CounterMsg(_, Counter.ChangeSelection _)) ->
+            //| Cell.TowerMsg (Tower.AddCounters _)
+            //| Cell.TowerMsg (Tower.LiftCounter _) ->
+                let state'' =
+                    match state.Selection with
+                    | Selected loc when loc <> coord ->
+                        Helpers.updateTower (Tower.DeselectCounters) loc state'
+                    | _ -> state'
+                
+                state''.setSelection (
+                    if Array.isEmpty state''[coord].Tower.SelectedIdxs
                     then NotSelected
                     else Selected coord)
             | _ -> state'),
             Cmd.none
         | Test, _ ->
-            List.iter (Supply.defineUnitsSupply state) [USSR; Germany]
-            (Helpers.update state), Cmd.none
+            List.fold (Supply.defineUnitsSupply) state [USSR; Germany], Cmd.none
         | SetMask mask, _ -> 
-            if mask = Cell.SupplyMask && state.Mask <> mask then
-                List.iter (Supply.calculateDirectSupply state) [USSR; Germany]
-            { state with Mask = mask }, Cmd.none
+            if mask = Cell.SupplyMask && state.Mask <> mask
+            then List.fold (Supply.calculateDirectSupply) state [USSR; Germany]
+            else state
+            |> Helpers.setMask mask, Cmd.none
         | NextMaskOption mask, _ ->
             let countryOpt' = 
                 match state.MaskOptions[mask] with
@@ -121,7 +110,7 @@ module Main =
                 if state.Mask = mask 
                 then Cmd.ofMsg (SetMask mask)
                 else Cmd.none
-            { state with MaskOptions = maskOptions }, cmd
+            state.setMaskOptions maskOptions, cmd
 
 
     module private Images =
@@ -185,9 +174,9 @@ module Main =
                 DragDrop.allowDrop true
             
                 Canvas.children [
-                    yield! state.Cells.Values
-                            |> Seq.map (fun cell -> Cell.view (cell, maskInfo) (dispatchCell cell.Coord))
-                    match state.CounterSelection with
+                    yield! state.Cells |> Seq.toArray
+                        |> Array.map (fun cell -> Cell.view (cell, maskInfo) (dispatchCell cell.Coord))
+                    match state.Selection with
                     | Dragging (coord, _, _) ->
                         yield MovableBorder.create [ 
                             MovableBorder.zIndex 10
@@ -202,19 +191,18 @@ module Main =
             ]
         ) ]
 
-    let view (state: T, phase: Phase) (dispatch: Msg -> unit) : IView =
+    let view (state: T) (dispatch: Msg -> unit) : IView =
         let dispatchCell = Library.dispatchwithIndex dispatch CellMsg
 
         DockPanel.create [
             DockPanel.focusable true
-            match state.CounterSelection with
+            match state.Selection with
             | Selected coord ->
                 DockPanel.onKeyDown (fun e->
                     e.Handled <- true
                     match e.Key with
                     | Key.Up -> dispatchCell coord (Cell.TowerMsg (Tower.LiftCounter true))
                     | Key.Down -> dispatchCell coord (Cell.TowerMsg (Tower.LiftCounter false))
-                    | Key.T -> dispatch Test
                     | _ -> ()
                 )
             | _ -> ()
@@ -227,18 +215,12 @@ module Main =
                     StackPanel.height 40
                     StackPanel.margin 5
                     StackPanel.children [
-                        Border.create [
-                            Border.width 200
-                            Border.borderBrush "black"
-                            Border.borderThickness 1
-                            Border.child (TextBlock.create [
-                                TextBlock.horizontalAlignment HorizontalAlignment.Center
-                                TextBlock.verticalAlignment VerticalAlignment.Center
-                                TextBlock.text <| sprintf "%A" phase
-                            ])
-                        ]
                         maskButton (Cell.ZOCMask, "ZOC", Key.Z) state dispatch
                         maskButton (Cell.SupplyMask, "Supply", Key.S) state dispatch
+                        Button.create [
+                            Button.content "Test"
+                            Button.onClick (fun _ -> dispatch Test)
+                        ]
                     ]
                 ]
                 Border.create [ 
