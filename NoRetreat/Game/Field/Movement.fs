@@ -8,20 +8,19 @@ let removeCounters coord (field: T) =
     if counters.Length = 0 then
         field
     else
-        updateTower Tower.RemoveCounters coord field
+        updateTowerAt Tower.RemoveCounters coord field
         |> subZOC counters.Length counters[0].Country coord
 
 let addCounters coord counters (field: T) =
-    updateTower (Tower.AddCounters counters) coord field
+    updateTowerAt (Tower.AddCounters counters) coord field
     |> addZOC counters.Length counters[0].Country coord
 
 let clearCellsSelection coord field =
-    unblockedCellsWithItself coord field |> Array.map _.Coord
+    unblockedCellsWithItself coord field
     |> updateCells (Cell.SetSelection Cell.NotSelected) field
 
 let defineMovements coord counters (field: T) =
     let adjacentCells = unblockedCells coord field
-    let adjacentCoords = adjacentCells |> Array.map _.Coord
     
     adjacentCells
     |> Array.map (fun cell ->
@@ -32,5 +31,5 @@ let defineMovements coord counters (field: T) =
             | _, Cell.NotSelected -> Cell.Selection.NotSelected
             | Cell.MovedFrom, Cell.MovedFrom -> Cell.MovedFrom
             | _, _ -> Cell.CanMoveTo))
-    |> Array.foldBack2 (Cell.SetSelection >> updateCell) <| adjacentCoords <| field
-    |> updateCell (Cell.SetSelection Cell.CanBeDropped) coord
+    |> updateCells' Cell.SetSelection field adjacentCells
+    |> updateCellAt (Cell.SetSelection Cell.CanBeDropped) coord

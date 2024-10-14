@@ -66,8 +66,16 @@ type T(countersSelection: SelectionState,
 
     member x.Item with get coord = x.getCell coord
     member _.getCell coord = realCoord coord |> map.get_Item
-    member x.setCell coord updateCell =
-        let map' = Map.change (realCoord coord) (Option.map updateCell) map
+    member x.updateCell update coord =
+        let map' = Map.change (realCoord coord) (Option.map update) map
+        T(x, map')
+    member x.updateCells' update args coords =
+        let map' = Array.foldBack2 (fun prop coord ->
+            Map.change (realCoord coord) <| Option.map (update prop)) args coords map
+        T(x, map')
+    member x.updateCells update coords = //x.updateCells' (ignore >> update) coords <| Array.create coords.Length ()
+        let update' = Option.map update
+        let map' = Array.foldBack (fun coord -> Map.change (realCoord coord) update') coords map
         T(x, map')
 
     member x.setSelection selection = if selection = countersSelection then x else T(x, map, selection=selection)
@@ -169,14 +177,24 @@ module Helpers =
             yield field[coord]
         |]
 
-    let updateCell msg coord (field: T) = field.setCell coord (Cell.update msg)
-    let updateTower msg coord (field: T) = updateCell (Cell.TowerMsg msg) coord field
+    let updateCellAt msg coord (field: T) = field.updateCell (Cell.update msg) coord
+    let updateCell msg (cell: Cell.T) field = updateCellAt msg cell.Coord field
 
-    let updateCells msg (field: T) coords = Array.foldBack (updateCell msg) coords field
-    let updateTowers (field: T) msg coords = updateCells (Cell.TowerMsg msg) field coords
+    let updateCellsAt msg (field: T) coords = field.updateCells (Cell.update msg) coords
+    let updateCells msg (field: T) (cells: Cell.T array) = cells |> Array.map _.Coord |> field.updateCells (Cell.update msg)
+    
+    let updateCellsAt' fMsg (field: T) coords args = field.updateCells' (fMsg >> Cell.update) args coords
+    let updateCells' fMsg field (cells: Cell.T array) args = cells |> Array.map _.Coord |> updateCellsAt' fMsg field <| args
+
+    let updateTowerAt msg coord field = updateCellAt (Cell.TowerMsg msg) coord field
+    let updateTower msg cells field = updateCell (Cell.TowerMsg msg) cells field
+
+    let updateTowersAt msg field coords = updateCellsAt (Cell.TowerMsg msg) field coords
+    let updateTowers msg field cells = updateCells (Cell.TowerMsg msg) field cells
+    let updateTowers' fMsg field cells args = updateCells' (fMsg >> Cell.TowerMsg) field cells args
 
     let private changeZOC quantity country coord (field: T) =
-        unblockedCellsWithItself coord field |> Array.map _.Coord
+        unblockedCellsWithItself coord field
         |> updateCells (Cell.ChangeZOC (country, quantity)) field
 
     let addZOC quantity = changeZOC quantity
@@ -187,5 +205,5 @@ module Helpers =
         let counters = Array.map (Counter.init <| Some coord) idxs
         let owner = counters[0].Country
 
-        updateCell (Cell.TowerMsg <| Tower.Init counters) coord field
+        updateCellAt (Cell.TowerMsg <| Tower.Init counters) coord field
         |> addZOC counters.Length owner coord

@@ -73,24 +73,36 @@ module Main =
           Dragging (oldCoord, _, counters) when oldCoord <> coord ->
             Movement.removeCounters oldCoord state
             |> Movement.addCounters coord counters, Cmd.none
-        | CellMsg(coord, cellMsg), _ ->
-            let state' = Helpers.updateCell cellMsg coord state
+        | CellMsg(coord, Cell.TowerMsg(Tower.CounterMsg(idx, Counter.ChangeSelection add))), _ ->
+            let state' = 
+                Helpers.updateTowerAt (Tower.CounterMsg(idx, Counter.ChangeSelection add)) coord state
+                |> match state.Selection with
+                   | Selected loc when loc <> coord ->
+                       Helpers.updateTowerAt Tower.DeselectCounters loc
+                   | _ -> id
 
-            (match cellMsg with
-            | Cell.TowerMsg (Tower.CounterMsg(_, Counter.ChangeSelection _)) ->
+            state'.setSelection (
+                if Array.isEmpty state'[coord].Tower.SelectedIdxs
+                then NotSelected
+                else Selected coord),
+            Cmd.none
+        | CellMsg(coord, cellMsg), _ ->
+            Helpers.updateCellAt cellMsg coord state, 
+            //(match cellMsg with
+            //| Cell.TowerMsg (Tower.CounterMsg(_, Counter.ChangeSelection _)) ->
             //| Cell.TowerMsg (Tower.AddCounters _)
             //| Cell.TowerMsg (Tower.LiftCounter _) ->
-                let state'' =
-                    match state.Selection with
-                    | Selected loc when loc <> coord ->
-                        Helpers.updateTower (Tower.DeselectCounters) loc state'
-                    | _ -> state'
-                
-                state''.setSelection (
-                    if Array.isEmpty state''[coord].Tower.SelectedIdxs
-                    then NotSelected
-                    else Selected coord)
-            | _ -> state'),
+            //    let state'' =
+            //        match state.Selection with
+            //        | Selected loc when loc <> coord ->
+            //            Helpers.updateTowerAt (Tower.DeselectCounters) loc state'
+            //        | _ -> state'
+            //    
+            //    state''.setSelection (
+            //        if Array.isEmpty state''[coord].Tower.SelectedIdxs
+            //        then NotSelected
+            //        else Selected coord)
+            //| _ -> state'),
             Cmd.none
         | Test, _ ->
             List.fold (Supply.defineUnitsSupply) state [USSR; Germany], Cmd.none

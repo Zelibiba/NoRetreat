@@ -101,16 +101,15 @@ module private Helpers =
             
             let enemyCountry = country.Opposite
             visitedCoords.Keys |> Seq.toArray
-            |> Array.filter visitedCoords.get_Item
+            //|> Array.filter visitedCoords.get_Item
             |> Array.filter (field.getCell >> Cell.belongsTo enemyCountry >> not)
 
     let defineCitiesSupply country field citiesCoords =
-        let supplies =
-            SupplyAction.traverse isCitySupplied citiesCoords
-            |> SupplyAction.execute country field
-            |> List.map (fun isSupplied -> (country, isSupplied))
-
-        List.foldBack2 (Cell.SetSupply >> Helpers.updateCell) supplies citiesCoords field
+        SupplyAction.traverse isCitySupplied citiesCoords
+        |> SupplyAction.execute country field
+        |> List.toArray
+        |> Array.map (fun isSupplied -> (country, isSupplied))
+        |> Helpers.updateCellsAt' Cell.SetSupply field (List.toArray citiesCoords)
 
     let defineAllCitiesSupply country field = defineCitiesSupply country field field.CitiesCoords
 
@@ -133,10 +132,9 @@ module private Helpers =
 
         let field' =
             field.Cells |> Seq.toArray
-            |> Array.map _.Coord
             |> Helpers.updateCells (Cell.SetSupply (country, false)) field
 
-        Helpers.updateCells (Cell.SetSupply (country, true)) field' suppliedCellsCoord
+        Helpers.updateCellsAt (Cell.SetSupply (country, true)) field' suppliedCellsCoord
 
     let checkAlterSupply country (field: T) coord =
         match field[coord].Sea with
@@ -152,15 +150,15 @@ module private Helpers =
 open Helpers
 
 let calculateDirectSupply field country =
-    defineAllCitiesSupply country field
-    |> defineCellsSupply country
+    //defineAllCitiesSupply country field
+    //|> 
+    defineCellsSupply country field
 
 let defineUnitsSupply (field: T) country =
     let cellsWithUnits = 
         field.Cells |> Seq.toArray
         |> Array.filter (Cell.belongsTo country)
-    let cellsCoords = cellsWithUnits |> Array.map _.Coord
 
     cellsWithUnits
     |> Array.map (fun cell -> cell.Supply[country] || (checkAlterSupply country field cell.Coord))
-    |> Array.foldBack2 (Counter.SetSupply >> Tower.UpdateAllCounters >> Helpers.updateTower) <| cellsCoords <| field
+    |> Helpers.updateTowers' (Counter.SetSupply >> Tower.UpdateAllCounters) field cellsWithUnits

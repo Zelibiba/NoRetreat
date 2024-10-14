@@ -186,20 +186,12 @@ let private backgroundSelection = function
     | MovedFrom -> "red"
     | _ -> "transparent"
 
-let private backgroundZOCFor countryOpt (zoc: ZOC.T) =
-    match countryOpt with
-    | Some USSR ->
-        if ZOC.isZOCOf USSR zoc
-        then "red"
-        else "transparent"
-    | Some Germany ->
-        if ZOC.isZOCOf Germany zoc
-        then "gray"
-        else "transparent"
-    | None ->
-        if ZOC.isZOCOf USSR zoc && ZOC.isZOCOf Germany zoc
-        then "blue"
-        else " transparent"
+let private backgroundZOCFor (countryOpt: Country option) (zoc: ZOC.T) =
+    match ZOC.isZOCOf USSR zoc, ZOC.isZOCOf Germany zoc with
+    | true, true when countryOpt.IsNone -> "blue"
+    | true, _    when not <| Option.contains Germany countryOpt -> "red"
+    | _, true    when not <| Option.contains USSR countryOpt -> "gray"
+    | _, _ -> "transparent"
 
 let private backgroundSupply countryOpt (supply: Map<Country, bool>) =
     if supply[USSR] && supply[Germany] then
