@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+     <Content Include="Rules.txt" />
      <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
 
@@ -19,8 +20,8 @@
     <Content Include="Assets\Hexes.xml" />
     <Content Include="Assets\avalonia-logo.ico" />
     <Content Include="Assets\UnitCounters.xml" />
-    <Compile Include="Extentions.fs" />
     <Compile Include="Library.fs" />
+    <Compile Include="Extentions.fs" />
     <Compile Include="EventExtention.fs" />
     <Compile Include="Controls.fs" />
     <Compile Include="Game\Types.fs" />

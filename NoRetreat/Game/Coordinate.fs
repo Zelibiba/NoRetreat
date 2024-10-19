@@ -2,6 +2,7 @@
 open NoRetreat
 
 [<Struct>]
+[<StructuredFormatDisplay("({R}, {C})")>]
 type Coordinate =
     { R: int
       C: int }

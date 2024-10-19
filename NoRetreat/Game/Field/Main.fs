@@ -23,6 +23,7 @@ open HexGameControls
 type Msg = 
     | CellMsg of Coordinate * Cell.Msg
     | EndDragging
+    | CheckSupply of firstCountry: Country
     | SetMask of Cell.Mask
     | NextMaskOption of Cell.Mask
     | Test
@@ -35,9 +36,10 @@ module Main =
             |> Helpers.setCounters (-4, 0)  [| 5 |]
             |> Helpers.setCounters (-5, 0)  [| 2; 1 |]
             //|> Helpers.setCounters (-4, -1) [| 1 |]
-            |> Helpers.setCounters (-7, 11) [| 4 |]
+            |> Helpers.setCounters (-7, 10) [| 4 |]
             |> Helpers.setCounters (-4, 1)  [| 51 |]
             |> Helpers.setCounters (-1, -2) [| 52 |]
+            |> Helpers.setCounters (-9, 11) [| 55 |]
         field, Cmd.none
 
     let private doDrag e = async {
@@ -63,7 +65,7 @@ module Main =
             |> Helpers.setSelection (Selected coord), Cmd.none
         | CellMsg(coord, Cell.DragEntered),
           Dragging (origCoord, oldCoord, counters) when oldCoord <> coord ->
-            let cost = state.getCell >> _.Terrain >> Cell.Terrain.cost
+            let cost unitType = state.getCell >> _.Terrain >> Cell.Terrain.cost unitType
             let counters' = Array.map (Counter.update <| Counter.MoveCounter (cost, coord)) counters
 
             Movement.clearCellsSelection oldCoord state
@@ -87,25 +89,15 @@ module Main =
                 else Selected coord),
             Cmd.none
         | CellMsg(coord, cellMsg), _ ->
-            Helpers.updateCellAt cellMsg coord state, 
-            //(match cellMsg with
-            //| Cell.TowerMsg (Tower.CounterMsg(_, Counter.ChangeSelection _)) ->
-            //| Cell.TowerMsg (Tower.AddCounters _)
-            //| Cell.TowerMsg (Tower.LiftCounter _) ->
-            //    let state'' =
-            //        match state.Selection with
-            //        | Selected loc when loc <> coord ->
-            //            Helpers.updateTowerAt (Tower.DeselectCounters) loc state'
-            //        | _ -> state'
-            //    
-            //    state''.setSelection (
-            //        if Array.isEmpty state''[coord].Tower.SelectedIdxs
-            //        then NotSelected
-            //        else Selected coord)
-            //| _ -> state'),
+            Helpers.updateCellAt cellMsg coord state, Cmd.none
+        | CheckSupply firstCountry, _ ->
+            [firstCountry; firstCountry.Opposite]
+            |> List.fold Supply.checkSupply state,
             Cmd.none
-        | Test, _ ->
-            List.fold (Supply.defineUnitsSupply) state [USSR; Germany], Cmd.none
+        | Test, _ -> 
+            [Germany; USSR]
+            |> List.fold Supply.checkSupply state,
+            Cmd.none
         | SetMask mask, _ -> 
             if mask = Cell.SupplyMask && state.Mask <> mask
             then List.fold (Supply.calculateDirectSupply) state [USSR; Germany]

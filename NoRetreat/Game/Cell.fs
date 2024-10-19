@@ -56,7 +56,7 @@ module Terrain =
         | "Area" -> Area
         | _ -> createCity str |> City
 
-    let cost terrain (unitType: Counter.UnitType) =
+    let cost (unitType: Counter.UnitType) terrain =
         match terrain with
         | Open -> 1
         | Forest -> if unitType.isTank then 2 else 1
@@ -151,7 +151,7 @@ let selectedCounters cell = Tower.selectedCounters cell.Tower
 let getMovementSelection cell (counter: Counter.T) =
     if Option.contains cell.Coord counter.MovedFrom then
         MovedFrom
-    else if Terrain.cost cell.Terrain counter.Type <= counter.Movement.Remained then 
+    else if Terrain.cost counter.Type cell.Terrain <= counter.Movement.Remained then 
         CanMoveTo
     else
         NotSelected
@@ -167,8 +167,20 @@ type Msg =
 
 let update (msg: Msg) (state: T) : T =
     match msg with
-    | TowerMsg towerMsg -> 
-        { state with Tower = Tower.update towerMsg state.Tower }
+    | TowerMsg towerMsg ->
+        let tower' = Tower.update towerMsg state.Tower
+
+        let updateZOC =
+            match towerMsg with
+            | Tower.RemoveCounters counters ->
+                ZOC.change (-counters.Length) counters[0].Country
+            | Tower.AddCounters counters
+            | Tower.Init counters ->
+                ZOC.change counters.Length counters[0].Country
+            | _ -> id
+
+        { state with Tower = tower'
+                     ZOC = updateZOC state.ZOC }
     | DragEntered
     | Dropped -> state
     | ChangeZOC (country, quantity) ->

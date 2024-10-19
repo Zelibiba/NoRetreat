@@ -43,14 +43,17 @@ module private SupplyAction =
 
 module private Helpers =
     module private AdjacentCells =
-        let private supplyCoordsUSSR = Array.map Coordinate.create [| (0, 1); (1, 0); (-1, 1) |]
-        let private supplyCoordsGermany = Array.map Coordinate.create [| (0, -1); (1, -1); (-1, 0) |]
+        let private supplyCoordsGermany   = Array.map Coordinate.create [| (0, -1); (1, -1); (-1, 0) |]
+        let private supplyCoordsUSSR      = Array.map Coordinate.create [| (0, 1); (1, 0); (-1, 1) |]
+        let private supplyCoordsLeningrad = Array.map Coordinate.create [| (-8, 11); (-8, 12) |]
         
         let For country (field: T) =
             match country with
-            | USSR -> supplyCoordsUSSR
-            | Germany -> supplyCoordsGermany
-            |> fun patternCoords coord -> Array.map ((+) coord) patternCoords
+            | USSR -> fun coord ->
+                if (coord.R, coord.C) = (-9, 11)
+                then supplyCoordsLeningrad
+                else Array.map ((+) coord) supplyCoordsUSSR
+            | Germany -> fun coord -> Array.map ((+) coord) supplyCoordsGermany
             |> field.choose
 
     let can'tBePathFor country (cell: Cell.T) =
@@ -126,15 +129,20 @@ module private Helpers =
             |> directSuppliedCells 3
         
         let (<*>) = SupplyAction.apply
-        let suppliedCellsCoord =
+        let suppliedCellsCoords = 
             SupplyAction.rtrn Array.append <*> suppliedFromEdge <*> suppliedFromCities
             |> SupplyAction.execute country field
 
-        let field' =
+        let allCoords = 
             field.Cells |> Seq.toArray
-            |> Helpers.updateCells (Cell.SetSupply (country, false)) field
+            |> Array.map _.Coord
+            |> Set.ofArray
+        let unsuppliedCellsCoords = 
+            Set.difference allCoords <| Set.ofArray suppliedCellsCoords
+            |> Set.toArray
 
-        Helpers.updateCellsAt (Cell.SetSupply (country, true)) field' suppliedCellsCoord
+        let field' = Helpers.updateCellsAt (Cell.SetSupply (country, false)) field unsuppliedCellsCoords
+        Helpers.updateCellsAt (Cell.SetSupply (country, true)) field' suppliedCellsCoords
 
     let checkAlterSupply country (field: T) coord =
         match field[coord].Sea with
@@ -150,15 +158,29 @@ module private Helpers =
 open Helpers
 
 let calculateDirectSupply field country =
-    //defineAllCitiesSupply country field
-    //|> 
-    defineCellsSupply country field
+    defineAllCitiesSupply country field
+    |> defineCellsSupply country
 
-let defineUnitsSupply (field: T) country =
-    let cellsWithUnits = 
-        field.Cells |> Seq.toArray
-        |> Array.filter (Cell.belongsTo country)
+let defineUnitsSupply country (field: T) =
+    let countersWithZOC (cell: Cell.T) = 
+        let _, quantity = List.toArray cell.Tower.Counters |> Counter.getZOCModification
+        quantity
 
-    cellsWithUnits
-    |> Array.map (fun cell -> cell.Supply[country] || (checkAlterSupply country field cell.Coord))
-    |> Helpers.updateTowers' (Counter.SetSupply >> Tower.UpdateAllCounters) field cellsWithUnits
+    field.Cells |> Seq.toArray
+    |> Array.filter (Cell.belongsTo country)
+    |> Array.fold (fun (field: T) cell ->
+        let isSupplied = cell.Supply[country] || (checkAlterSupply country field cell.Coord)
+        let cell' = Cell.updateTower (Tower.UpdateAllCounters <| Counter.SetSupply isSupplied) cell
+        let field' = field.updateCell (fun _ -> cell') cell.Coord
+
+        let quantity = countersWithZOC cell
+        let quantity' = countersWithZOC cell'
+        let diff = quantity' - quantity
+        if diff <> 0 
+            then Helpers.changeZOC (country, diff) cell.Coord field'
+            else field'
+        ) field
+
+let checkSupply field country =
+    calculateDirectSupply field country
+    |> defineUnitsSupply country

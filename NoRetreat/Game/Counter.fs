@@ -90,8 +90,8 @@ type Movement =
           History = history }
 
 [<Struct>]
-type Buff =
-    | NoBuff
+type Marker =
+    | NoMarker
     | OutOfSupply
 
 type T =
@@ -100,15 +100,18 @@ type T =
       Movement: Movement
       Country: Country
 
-      Buff: Buff
+      Markers: Marker
       
       Selection: Selection
       IsSideSwapped: bool }
 
     member x.IsSelected = x.Selection = Selected
+    member x.MovedFrom = List.tryItem 1 x.Movement.History
+
     member private x.unboxedCurrentSide = Side.unbox x.CurrentSide
     member x.Type =  x.unboxedCurrentSide.Type
-    member x.MovedFrom = List.tryItem 1 x.Movement.History
+    member x.AttackType = x.unboxedCurrentSide.Attack.Type
+    member x.MP = x.unboxedCurrentSide.MP
 
 module private CounterLoader =
     type private T =
@@ -156,24 +159,43 @@ module private CounterLoader =
           Movement = Movement.create fullSide.MP currentCoordOpt
           Country = Country.fromString unit.Country
 
-          Buff = NoBuff
+          Markers = NoMarker
           
           Selection = CanBeSelected
           IsSideSwapped = false }
 
 module private Helpers =
-    let swapSides counter =
-        { counter with
-            CurrentSide = counter.OtherSide
-            OtherSide = counter.CurrentSide }
+    let swapSides counter = { counter with
+                                CurrentSide = counter.OtherSide
+                                OtherSide = counter.CurrentSide }
+
+    let setMarker (counter: T) =
+        let movement' = { counter.Movement with Full = 3; Remained = 3 }
+        { counter with Markers = OutOfSupply
+                       Movement = movement' }
+
+    let removeMarker (counter: T) =
+        let mp = counter.MP
+        let movement' = { counter.Movement with Full = mp; Remained = mp }
+        {counter with Markers = NoMarker
+                      Movement = movement' }
+
+    let hasZOC (counter: T) =
+        counter.AttackType <> NoZOC && counter.Markers <> OutOfSupply
+
 
 let init = CounterLoader.createCounter
+
+let getZOCModification (counters: T array) =
+    let owner = counters[0].Country
+    let withZOC = Array.filter Helpers.hasZOC counters
+    owner, withZOC.Length
 
 type Msg =
     | ChangeSelection of add: bool
     | Flip of back: bool
     | BeginDrag of PointerEventArgs
-    | MoveCounter of cost: (Coordinate -> UnitType -> int) * newCoord: Coordinate
+    | MoveCounter of cost: (UnitType -> Coordinate -> int) * newCoord: Coordinate
     | SetSupply of bool
 
 let update (msg: Msg) (state: T) =
@@ -186,19 +208,20 @@ let update (msg: Msg) (state: T) =
     | Flip back -> { state with IsSideSwapped = not back } |> Helpers.swapSides
     | BeginDrag _ -> state
     | MoveCounter (cost, nextCoord) ->
+        let cost' = cost state.Type
         let movement = state.Movement
-        let movementCost = cost nextCoord state.Type
         let movement' =
             if Option.contains nextCoord state.MovedFrom then
                 { movement with
-                    Remained = movement.Remained + movementCost 
+                    Remained = movement.Remained + cost' movement.History[0]
                     History = movement.History.Tail }
             else
                 { movement with
-                    Remained = movement.Remained - movementCost
+                    Remained = movement.Remained - cost' nextCoord
                     History = nextCoord :: movement.History }
+
         { state with Movement = movement' }
-    | SetSupply isSupplied -> { state with Buff = if isSupplied then NoBuff else OutOfSupply }
+    | SetSupply isSupplied -> (if isSupplied then Helpers.removeMarker  else Helpers.setMarker) <| state
 
 module private Images =
     let load =
@@ -267,8 +290,8 @@ let view (state: T) (dispatch: Msg -> unit) : IView =
                         Border.cornerRadius 10
                         Border.borderThickness 7
                         Border.borderBrush (
-                            match state.Buff with
-                            | NoBuff -> "transparent"
+                            match state.Markers with
+                            | NoMarker -> "transparent"
                             | OutOfSupply -> "orange")
                     ]
                 ]

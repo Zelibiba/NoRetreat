@@ -8,12 +8,12 @@ let removeCounters coord (field: T) =
     if counters.Length = 0 then
         field
     else
-        updateTowerAt Tower.RemoveCounters coord field
-        |> subZOC counters.Length counters[0].Country coord
+        updateTowerAt (Tower.RemoveCounters counters) coord field
+        |> subZOC counters coord
 
 let addCounters coord counters (field: T) =
     updateTowerAt (Tower.AddCounters counters) coord field
-    |> addZOC counters.Length counters[0].Country coord
+    |> addZOC counters coord
 
 let clearCellsSelection coord field =
     unblockedCellsWithItself coord field

@@ -49,7 +49,7 @@ type T(countersSelection: SelectionState,
 
         T(NotSelected, Map pairs, cities, mapEdges, Cell.NoMask, maskOptions)
 
-    new(field: T, map, ?selection, ?citiesCoords, ?mapEdgesCoords, ?mask, ?maskOptions) =
+    private new(field: T, map, ?selection, ?citiesCoords, ?mapEdgesCoords, ?mask, ?maskOptions) =
         let selection = defaultArg selection field.Selection
         let citiesCoords = defaultArg citiesCoords field.CitiesCoords
         let mapEdgesCoords = defaultArg mapEdgesCoords field.MapEdgesCoords
@@ -193,17 +193,16 @@ module Helpers =
     let updateTowers msg field cells = updateCells (Cell.TowerMsg msg) field cells
     let updateTowers' fMsg field cells args = updateCells' (fMsg >> Cell.TowerMsg) field cells args
 
-    let private changeZOC quantity country coord (field: T) =
-        unblockedCellsWithItself coord field
+    let changeZOC (country, quantity) coord field =
+        unblockedCells coord field
         |> updateCells (Cell.ChangeZOC (country, quantity)) field
 
-    let addZOC quantity = changeZOC quantity
-    let subZOC quantity = changeZOC -quantity
+    let addZOC counters = Counter.getZOCModification counters |> changeZOC
+    let subZOC counters = Counter.getZOCModification counters |> fun (c, q) -> (c, -q) |> changeZOC
 
     let setCounters rawCoord idxs (field: T) =
         let coord = Coordinate.create rawCoord
         let counters = Array.map (Counter.init <| Some coord) idxs
-        let owner = counters[0].Country
 
         updateCellAt (Cell.TowerMsg <| Tower.Init counters) coord field
-        |> addZOC counters.Length owner coord
+        |> addZOC counters coord

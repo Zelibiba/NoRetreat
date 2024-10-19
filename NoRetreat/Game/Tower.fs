@@ -10,30 +10,31 @@ open Avalonia.FuncUI.Types
 open HexGameControls
 
 type T =
-    private { Counters: Counter.T list
+    private { _Counters: Counter.T list
               IsExpanded: bool }
 
-    member x.get index = x.Counters[index]
+    member x.get index = x._Counters[index]
+    //member x.Item with get index = x._Counters[index]
+    member x.Counters = x._Counters
 
-    member x.Height = x.Counters.Length
+    member x.Height = x._Counters.Length
     member x.Indexes = [| 0 .. x.Height - 1 |]
 
     member x.SelectedIdxs = Array.filter (x.get >> _.IsSelected) x.Indexes
     member x.NotSelectedIdxs = Array.filter (x.get >> _.IsSelected >> not) x.Indexes
 
-    member x.Owner =
-        x.Counters |> List.tryPick (_.Country >> Some)
+    member x.Owner = x._Counters |> List.tryPick (_.Country >> Some)
 
 module private Helpers =
     let create counters =
-        { Counters = Array.toList counters
+        { _Counters = Array.toList counters
           IsExpanded = false }
 
     let inline setIsExpanded isExpanded tower = { tower with IsExpanded = isExpanded }
 
     let updateCounter msg idx (tower: T) =
-        let counter' = Counter.update msg tower.Counters[idx]
-        { tower with Counters = List.updateAt idx counter' tower.Counters}
+        let counter' = Counter.update msg tower._Counters[idx]
+        { tower with _Counters = List.updateAt idx counter' tower._Counters}
 
     let updateCounters msg tower indexes =
         Array.foldBack (updateCounter msg) indexes tower
@@ -44,16 +45,22 @@ module private Helpers =
     let selectAllCounters (tower: T) =
         updateCounters (Counter.ChangeSelection false) tower tower.NotSelectedIdxs
 
-    let removeSelectedCounters (tower: T) =
-        let counters' = Array.map tower.get tower.NotSelectedIdxs |> Array.toList
-        let tower' = { tower with Counters = counters' }
+    let removeCounters counters (tower: T) =
+        let set1 = Set.ofArray counters
+        let set2 = Set.ofList tower._Counters
+
+        if not <| Set.isSubset set1 set2 then
+            failwith "Can't remove counter that not in tower"
+
+        let counters'Set = Set.difference set2 set1
+        let tower' = { tower with _Counters = Set.toList counters'Set }
         
-        if counters'.Length <= 1
+        if counters'Set.Count <= 1
         then setIsExpanded false tower'
         else tower'
 
     let addCounters newCounters tower =
-        { tower with Counters = tower.Counters @ Array.toList newCounters }
+        { tower with _Counters = tower._Counters @ Array.toList newCounters }
 
     let private swap (array: _ array) i j =
         let tmp = array[i]
@@ -62,27 +69,26 @@ module private Helpers =
 
     let liftCountersUp (tower: T) =
         let lastIdx = tower.Height - 1
-        let counters = List.toArray tower.Counters
+        let counters = List.toArray tower._Counters
         Array.rev tower.SelectedIdxs
         |> Array.iter (fun i ->
             if i < lastIdx && not counters[i+1].IsSelected then swap counters (i+1) i)
 
-        { tower with Counters = Array.toList counters }
+        { tower with _Counters = Array.toList counters }
 
     let liftCountersDown (tower: T) =
-        let counters = List.toArray tower.Counters
+        let counters = List.toArray tower._Counters
         Array.iter (fun i ->
             if i > 0 && not counters[i-1].IsSelected then swap counters (i-1) i)
             tower.SelectedIdxs
 
-        { tower with Counters = Array.toList counters }
+        { tower with _Counters = Array.toList counters }
 
 
 open Helpers
 
 
-let selectedCounters (tower: T) =
-    Array.map tower.get tower.SelectedIdxs
+let selectedCounters (tower: T) = Array.map tower.get tower.SelectedIdxs
 
 let init = create
 
@@ -92,7 +98,7 @@ type Msg =
     | UpdateAllCounters of Counter.Msg
     | ChangeExpansion
     | DeselectCounters
-    | RemoveCounters
+    | RemoveCounters of Counter.T array
     | AddCounters of Counter.T array
     | LiftCounter of up: bool
 
@@ -111,7 +117,7 @@ let update (msg: Msg) (state: T) : T =
     | DeselectCounters -> deselectCounters state
     | ChangeExpansion -> deselectCounters state |> setIsExpanded (not state.IsExpanded)
 
-    | RemoveCounters -> removeSelectedCounters state
+    | RemoveCounters counters -> removeCounters counters state
     | AddCounters counters -> addCounters counters state |> if state.IsExpanded then id else selectAllCounters
 
     | LiftCounter up -> state |> if up then liftCountersUp else liftCountersDown
@@ -133,7 +139,7 @@ let private toolTipView (counters: Counter.T list) =
                             StackPanel.orientation Orientation.Vertical
                             StackPanel.children [
                                 Counter.view counter ignore
-                                if counter.Buff = Counter.OutOfSupply then
+                                if counter.Markers = Counter.OutOfSupply then
                                     Counter.ImageOOS()
                             ]
                         ]
@@ -155,9 +161,9 @@ let view (state: T) (dispatch: Msg -> unit) : IView =
             TowerPanel.deltaPadding (5, -11)
         TowerPanel.onDoubleTapped (fun _ -> dispatch ChangeExpansion)
         TowerPanel.children (
-            state.Counters
+            state._Counters
             |> List.mapi (fun idx counter -> Counter.view counter (dispatchCounter idx))) 
         ToolTip.placement PlacementMode.BottomEdgeAlignedRight
         ToolTip.showDelay 1000
-        ToolTip.tip (toolTipView state.Counters)
+        ToolTip.tip (toolTipView state._Counters)
     ]

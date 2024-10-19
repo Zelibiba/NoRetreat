@@ -25,8 +25,8 @@ let updateCard msg player index =
 
 let deselectCards (player: T) =
     player.Cards
-    |> List.toSeq
-    |> Seq.indexed
-    |> Seq.filter (snd >> _.Selection >> (=) CanBeSelected)
-    |> Seq.map fst
-    |> Seq.fold (updateCard <| Card.SetSelection NotSelected) player
+    |> List.toArray
+    |> Array.indexed
+    |> Array.filter (snd >> _.Selection >> (=) CanBeSelected)
+    |> Array.map fst
+    |> Array.fold (updateCard <| Card.SetSelection NotSelected) player

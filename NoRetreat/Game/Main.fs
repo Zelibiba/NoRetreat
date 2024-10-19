@@ -8,6 +8,11 @@ open Avalonia.Layout
 open Avalonia.FuncUI.DSL
 open Avalonia.FuncUI.Types
 
+[<Struct>]
+type Phase =
+    | CardsPhase of discard: bool
+    | SupplyPhase
+
 type T = 
     { Field: Field.T
       CardDeck: CardDeck.T
@@ -18,21 +23,31 @@ type T =
       Player: Player.T
       Enemy: Player.T }
 
+module private Phase =
+    let private canSwitchToNext (game: T) =
+        let can = 
+            match game.Phase with
+            | CardsPhase discard -> not discard
+            | SupplyPhase -> true
+
+        { game with CanSwitchToNextPhase = can }
+
+    let toNext (game: T) =
+        match game.Phase with
+        | CardsPhase true -> { game with Phase = CardsPhase false }
+        | CardsPhase false ->
+            let field', _ = Field.Main.update (Field.CheckSupply game.Player.Country) game.Field
+            { game with Field = field'; Phase = SupplyPhase }
+        | SupplyPhase -> { game with Phase = SupplyPhase }
+        
+        |> canSwitchToNext
+
 type Msg =
     | NextPhase
     | FieldMsg of Field.Msg
     | CardMsg of int * Card.Msg
 
 module Main =
-
-    let toNextPhase (game: T) =
-        let player' = Player.deselectCards game.Player
-        let phase' = game.Phase.Next
-        { game with 
-            Player = player'
-            Phase = phase'
-            CanSwitchToNextPhase = Phase.canSwitchToNext phase'}
-
     let init () =
         let cards, cardDeck = CardDeck.create () |> CardDeck.drawMany 4
 
@@ -49,8 +64,7 @@ module Main =
     let update (msg: Msg) (state: T) =
         match msg with
         | NextPhase -> 
-            let state' = toNextPhase state
-            state', Cmd.none
+            Phase.toNext state, Cmd.none
         | FieldMsg fieldMsg ->
             let field, cmd = Field.Main.update fieldMsg state.Field
         
@@ -65,7 +79,7 @@ module Main =
                 else
                     let cards, deck' = CardDeck.drawMany 4 deck
                     let player' = Player.addCards player cards
-                    player', deck', toNextPhase
+                    player', deck', Phase.toNext
 
             definePhase { state with Player = player'; CardDeck = deck' }, Cmd.none
         | CardMsg (idx, cardMsg) ->
